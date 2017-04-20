@@ -324,7 +324,7 @@ def main(argv = sys.argv[1:]):
     for param in configDict:
         logger.info('%s -> %s', param, configDict[param])
 
-    if scenarioArgs.oai:
+    if generalArgs.oai:
         c = Client(
             hss = Hss(configArg.hss_mgmt, configArgs.hss_data, None),
             mme = Mme(configArgs.mme_mgmt, configArgs.mme_data,
@@ -337,7 +337,7 @@ def main(argv = sys.argv[1:]):
                               hostArgs.spgw_host),
             ds = None,
             lb = None)
-    elif scenarioArgs.pp:
+    elif generalArgs.pp:
         c = Client(
                 hss = Hss(configArg.hss_mgmt, configArgs.hss_data, '2'),
                 mme = Mme(configArgs.mme_mgmt, configArgs.mme_data,
