@@ -150,9 +150,9 @@ class Client(object):
             self.mme_config = {
                 'threads_count': self.mme.threads_count,
                 'hss_ip': self.hss.s11_ip,
-                'sgw_s1_ip': self.sgw.s1_ip,
-                'sgw_s11_ip': self.sgw.s11_ip,
-                'sgw_s5_ip': self.sgw.s5_ip,
+                'sgw_s1_ip': self.lb.s1_ip,
+                'sgw_s11_ip': self.lb.s11_ip,
+                'sgw_s5_ip': self.lb.s5_ip,
                 'ds_ip': self.ds.ip,
                 'mme_s1_ip': self.mme.s1_ip,
                 'mme_s11_ip': self.mme.s11_ip,
@@ -170,12 +170,13 @@ class Client(object):
             self.pgw_config = {
                 's5_threads_count': self.pgw.s5_threads_count,
                 'sgi_threads_count': self.pgw.sgi_threads_count,
-                'sgw_s5_ip': self.sgw.s5_ip,
+                'sgw_s5_ip': self.lb.s5_ip,
                 'pgw_s5_ip': self.pgw.s5_ip,
                 'pgw_sgi_ip': self.pgw.sgi_ip,
                 'ds_ip': self.ds.ip,
                 'sink_ip_addr': self.pgw.sink_ip
             }
+
             mgmts = self.sgw.mgmt_ip.split(',')
             s11s = self.sgw.s11_ip.split(',')
             s1s = self.sgw.s1_ip.split(',')
