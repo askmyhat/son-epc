@@ -270,15 +270,15 @@ def parsePPScenarioSpecific(argv):
                         help='IP of the load balancer')
     parser.add_argument('--lb_s11_ip', required=True,
                         help='IP of the load balancer for SGW-S11')
-    parser.add_argument('--lb_s11_port', required=True,
+    parser.add_argument('--lb_s11_port', required=True, default=7000,
                         help='Port of the load balancer for SGW-S11')
     parser.add_argument('--lb_s1_ip', required=True,
                         help='IP of the load balancer for SGW-S1')
-    parser.add_argument('--lb_s1_port', required=True,
+    parser.add_argument('--lb_s1_port', required=True, default=7100,
                         help='Port of the load balancer for SGW-S1')
     parser.add_argument('--lb_s5_ip', required=True,
                         help='IP of the load balancer for SGW-S5')
-    parser.add_argument('--lb_s5_port', required=True,
+    parser.add_argument('--lb_s5_port', required=True, default=7200,
                         help='Port of the load balancer for SGW-S5')
     return parser.parse_known_args(argv)
 
