@@ -282,7 +282,8 @@ class CertificateConfigurator(ConfiguratorHelpers):
 class Runner(object):
 
     def __init__(self, executable, log_dir=None,
-                 start_shell=False, arguments = ''):
+                 start_shell=False, arguments = '',
+                 append_log = False):
         self.logger = logging.getLogger(Runner.__name__)
         self._executable = os.path.expanduser(executable)
         self._task = None
@@ -290,6 +291,7 @@ class Runner(object):
         self._std_contents = {1: "", 2: ""}
         self._log_dir = log_dir
         self._arguments = arguments
+        self._append_log = append_log
 
     def start(self):
         if self._task is not None:
@@ -329,7 +331,10 @@ class Runner(object):
                 file_name = os.path.join(log_dir, "stderr")
                 self.logger.debug('Writing stderr in file %s', file_name)
 
-            log_file = open(file_name, 'w')
+            if self._append_log:
+                log_file = open(file_name, 'a')
+            else:
+                log_file = open(file_name, 'w')
         else:
             self.logger.debug('Logging directory %s is not a valid directory',
                               log_dir)

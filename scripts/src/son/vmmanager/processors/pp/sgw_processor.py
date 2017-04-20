@@ -3,6 +3,7 @@ from son.vmmanager.processors import utils
 
 import tempfile
 import logging
+import os
 
 class SGW_MessageParser(object):
 
@@ -13,6 +14,9 @@ class SGW_MessageParser(object):
     MSG_SGW_S1_IP_ADDR = 'sgw_s1_ip_addr'
     MSG_SGW_S5_IP_ADDR = 'sgw_s5_ip_addr'
     MSG_PGW_S5_IP_ADDR = 'pgw_s5_ip_addr'
+    MSG_LB_S11_IP_ADDR = 'lb_s11_ip_addr'
+    MSG_LB_S1_IP_ADDR = 'lb_s1_ip_addr'
+    MSG_LB_S5_IP_ADDR = 'lb_s5_ip_addr'
     MSG_DS_IP = 'ds_ip'
     MSG_DS_PORT = 'ds_port'
     MSG_SGW_S11_PORT = 'sgw_s11_port'
@@ -20,9 +24,10 @@ class SGW_MessageParser(object):
     MSG_SGW_S5_PORT = 'sgw_s5_port'
     MSG_PGW_S5_PORT = 'pgw_s5_port'
 
-    MSG = [MSG_S11_THREADS_COUNT, MSG_S1_THREADS_COUNT,
-           MSG_S5_THREADS_COUNT, MSG_SGW_S11_IP_ADDR,
-           MSG_SGW_S1_IP_ADDR, MSG_SGW_S5_IP_ADDR, MSG_PGW_S5_IP_ADDR,
+    MSG = [MSG_S11_THREADS_COUNT, MSG_S1_THREADS_COUNT, MSG_S5_THREADS_COUNT,
+           MSG_SGW_S11_IP_ADDR, MSG_SGW_S1_IP_ADDR, MSG_SGW_S5_IP_ADDR,
+           MSG_LB_S11_IP_ADDR, MSG_LB_S1_IP_ADDR, MSG_LB_S5_IP_ADDR,
+           MSG_PGW_S5_IP_ADDR,
            MSG_DS_IP, MSG_DS_PORT, MSG_SGW_S11_PORT, MSG_SGW_S1_PORT,
            MSG_SGW_S5_PORT, MSG_PGW_S5_PORT]
 
@@ -46,6 +51,8 @@ class SGW_Config(utils.CommandConfig):
     def __init__(self, s11_threads_count = None, s1_threads_count = None,
                  s5_threads_count = None, sgw_s11_ip_addr = None,
                  sgw_s1_ip_addr = None, sgw_s5_ip_addr = None,
+                 lb_s11_ip_addr = None,
+                 lb_s1_ip_addr = None, lb_s5_ip_addr = None,
                  pgw_s5_ip_addr = None, ds_ip = None, ds_port = None,
                  sgw_s11_port = None, sgw_s1_port = None, sgw_s5_port = None,
                  pgw_s5_port = None, **kwargs):
@@ -55,6 +62,9 @@ class SGW_Config(utils.CommandConfig):
         self.sgw_s11_ip_addr = sgw_s11_ip_addr
         self.sgw_s1_ip_addr = sgw_s1_ip_addr
         self.sgw_s5_ip_addr = sgw_s5_ip_addr
+        self.lb_s11_ip_addr = lb_s11_ip_addr
+        self.lb_s1_ip_addr = lb_s1_ip_addr
+        self.lb_s5_ip_addr = lb_s5_ip_addr
         self.pgw_s5_ip_addr = pgw_s5_ip_addr
         self.ds_ip = ds_ip
         self.ds_port = ds_port
@@ -81,6 +91,12 @@ class SGW_Config(utils.CommandConfig):
           self.sgw_s1_ip_addr = sgw_config.sgw_s1_ip_addr
         if sgw_config.sgw_s5_ip_addr is not None:
           self.sgw_s5_ip_addr = sgw_config.sgw_s5_ip_addr
+        if sgw_config.lb_s11_ip_addr is not None:
+          self.lb_s11_ip_addr = sgw_config.lb_s11_ip_addr
+        if sgw_config.lb_s1_ip_addr is not None:
+          self.lb_s1_ip_addr = sgw_config.lb_s1_ip_addr
+        if sgw_config.lb_s5_ip_addr is not None:
+          self.lb_s5_ip_addr = sgw_config.lb_s5_ip_addr
         if sgw_config.pgw_s5_ip_addr is not None:
           self.pgw_s5_ip_addr = sgw_config.pgw_s5_ip_addr
         if sgw_config.ds_ip is not None:
@@ -100,12 +116,17 @@ class SGW_Config(utils.CommandConfig):
 class SGW_Processor(P):
 
     SGW_EXECUTABLE = '~/NFV_LTE_EPC/NFV_LTE_EPC-1.1/src/sgw.out'
+    CMD_IPTABLES = 'iptables'
+    ADD_IPTABLES = '-t nat -A PREROUTING -d %s -j REDIRECT'
+    DEL_IPTABLES = '-t nat -D PREROUTING -d %s -j REDIRECT'
 
     def __init__(self):
         self.logger = logging.getLogger(SGW_Processor.__name__)
 
         self._log_dir = tempfile.TemporaryDirectory(prefix='sgw.processor')
         self._log_dir_name = self._log_dir.name
+        self._iptables_log_dir_name = os.path.join(self._log_dir_name, 'iptables.out')
+        os.mkdir(self._iptables_log_dir_name)
         self._runner = utils.Runner(self.SGW_EXECUTABLE,
                                     log_dir=self._log_dir_name)
         self._sgw_config = SGW_Config()
@@ -113,6 +134,7 @@ class SGW_Processor(P):
     def process(self, json_dict):
         parser = SGW_MessageParser(json_dict)
         sgw_config = parser.parse()
+        self._handle_loadbalancing(sgw_config)
         self._sgw_config.update(sgw_config)
 
         if sgw_config.command == utils.CommandConfig.START:
@@ -140,6 +162,37 @@ class SGW_Processor(P):
         else:
             return P.Result.fail('Invalid command is given %s',
                                  sgw_config.command)
+
+    def _handle_loadbalancing(self, new_sgw_config):
+        isLb = new_sgw_config.lb_s11_ip_addr is not None
+        isLb = isLb and new_sgw_config.lb_s1_ip_addr is not None
+        isLb = isLb and new_sgw_config.lb_s5_ip_addr is not None
+
+        if isLb:
+            self._del_iptables(self._sgw_config.lb_s11_ip_addr)
+            self._del_iptables(self._sgw_config.lb_s1_ip_addr)
+            self._del_iptables(self._sgw_config.lb_s5_ip_addr)
+            self._add_iptables(self._sgw_config.lb_s11_ip_addr)
+            self._add_iptables(self._sgw_config.lb_s1_ip_addr)
+            self._add_iptables(self._sgw_config.lb_s5_ip_addr)
+
+    def _del_iptables(self, ip):
+        if ip is None:
+            return
+
+        r =  utils.Runner(self.CMD_IPTABLES, arguments = self.DEL_IPTABLES % ip,
+                          log_dir=self._iptables_log_dir_name,
+                          append_log = True)
+        r.start()
+
+    def _add_iptables(self, ip):
+        if ip is None:
+            return
+
+        r =  utils.Runner(self.CMD_IPTABLES, arguments = self.ADD_IPTABLES % ip,
+                          log_dir=self._iptables_log_dir_name,
+                          append_log = True)
+        r.start()
 
     def _setArguments(self):
         nvalid = self._sgw_config.s11_threads_count is None

@@ -5,76 +5,136 @@ import argparse
 import logging
 import sys
 
+class HostNames(object):
+    def __init__(self, hss, mme, sgw):
+        self.hss = hss
+        self.mme = mme
+        self.sgw = sgw
+
+class Ds(object):
+    def __init__(self, ip):
+        self.ip = ip
+
+class Hss(object):
+    def __init__(self, mgmt_ip, s11_ip, threads_count):
+        self.threads_count = threads_count
+        self.mgmt_ip = mgmt_ip
+        self.s11_ip = s11_ip
+
+class Mme(object):
+    def __init__(self, mgmt_ip, s11_ip, s1_ip, threads_count, trafmon_ip):
+        self.threads_count = thread_count
+        self.mgmt_ip = mgmt_ip
+        self.s11_ip = s11_ip
+        self.s1_ip = s1_ip
+        self.trafmon_ip = trafmon_ip
+
+class Pgw(object):
+    def __init__(self, mgmt_ip, s5_ip, sgi_ip, sink_ip,
+                 s5_threads_count, sgi_threads_count,):
+        self.mgmt_ip = mgmt_ip
+        self.s5_ip = s5_ip
+        self.sgi_ip = sgi_ip
+        self.sink_ip = sink_ip
+        self.s5_threads_count = s5_threads_count
+        self.sgi_threads_count = sgi_threads_count
+
+class Sgw(object):
+    def __init__(self, mgmt_ip, s11_ip, s1_ip, s5_ip,
+                 s11_threads_count, s1_threads_count,
+                 s5_threads_count):
+        self.mgmt_ip = mgmt_ip
+        self.s11_ip = s11_ip
+        self.s1_ip = s1_ip
+        self.s5_ip = s5_ip
+        self.s11_threads_count = s11_threads_count
+        self.s1_threads_count = s1_threads_count
+        self.s5_threads_count = s5_threads_count
+
+class Lb(object):
+    def __init__(self, mgmt_ip, s11_ip, s1_ip, s5_ip, s11_port, s1_port, s5_port):
+        self.mgmt_ip = mgmt_ip
+        self.s11_ip = s11_ip
+        self.s1_ip = s1_ip
+        self.s5_ip = s5_ip
+        self.s11_port = s11_port
+        self.s1_port = s1_port
+        self.s5_port = s5_port
+
 class Client(object):
 
-    def __init__(self, hss_mgmt, mme_mgmt, spgw_mgmt,
-                 hss_data, mme_data, spgw_data,
-                 hss_host, mme_host, spgw_host,
-                 mme_s1_ip, spgw_s1_ip, spgw_sgi_ip,
-                 pgw_s5_ip = None, sgw_s5_ip = None,
-                 trafmon_ip = None, sink_ip = None, pgw_mgmt = None,
-                 ds_ip = None, isPp = False):
-        self.hss_mgmt = hss_mgmt
-        self.mme_mgmt = mme_mgmt
-        self.spgw_mgmt = spgw_mgmt
-        self.hss_data = hss_data
-        self.mme_data = mme_data
-        self.spgw_data = spgw_data
-        self.hss_host = hss_host
-        self.mme_host = mme_host
-        self.spgw_host = spgw_host
-        self.mme_s1_ip = mme_s1_ip
-        self.spgw_s1_ip = spgw_s1_ip
-        self.spgw_sgi_ip = spgw_sgi_ip
-        self.pgw_s5_ip = pgw_s5_ip
-        self.sgw_s5_ip = sgw_s5_ip
-        self.trafmon_ip = trafmon_ip
-        self.sink_ip = sink_ip
-        self.pgw_mgmt = pgw_mgmt
-        self.ds_ip = ds_ip
+    def __init__(self, hss, mme, sgw, hosts, pgw, ds, lb, isPp = False):
+        self.hss = hss
+        self.mme = mme
+        self.sgw = sgw
+        self.hosts = hosts
+        self.pgw = pgw
+        self.ds = ds
+        self.lb = lb
         self.isPp = isPp
         self._init_configs()
 
     def _init_connection(self, isStopping = False):
         if self.isPp:
+            sgw_mgmts = self.sgw.mgmt_ip.split(',')
+            sgw_configs = zip(sgw_mgmts, self.sgw_config)
             self.factory = ClientFactory([
-                (self.hss_mgmt, self.hss_config),
-                (self.mme_mgmt, self.mme_config),
-                (self.spgw_mgmt, self.sgw_config),
-                (self.pgw_mgmt, self.pgw_config)
-            ], isStopping = isStopping)
+                (self.hss.mgmt_ip, self.hss_config),
+                (self.mme.mgmt_ip, self.mme_config),
+                (self.pgw.mgmt_ip, self.pgw_config),
+                (self.lb.mgmt_ip, self.lb_config)
+            ] + sgw_configs, isStopping = isStopping)
         else:
             self.factory = ClientFactory([
-                (self.hss_mgmt, self.hss_config),
-                (self.mme_mgmt, self.mme_config),
-                (self.spgw_mgmt, self.spgw_config)
+                (self.hss.mgmt_ip, self.hss_config),
+                (self.mme.mgmt_ip, self.mme_config),
+                (self.sgw.mgmt_ip, self.spgw_config)
             ], isStopping = isStopping)
 
     def _init_configs(self):
-        self.hosts = {
-            'hss': {
-                'host_name': '%s.openair4G.eur' % self.hss_host,
-                'ip': self.hss_data
-            },
-            'mme': {
-                'host_name': '%s.openair4G.eur' % self.mme_host,
-                'ip': self.mme_data
-            },
-            'spgw': {
-                'host_name': '%s.openair4G.eur' % self.spgw_host,
-                'ip': self.spgw_data
-            }
-        }
+        self._init_hosts()
         self._init_hss_config()
         self._init_mme_config()
         self._init_spgw_config()
+        self.__init_lb_config()
+
+    def _init_lb_config(self):
+        if self.isPp:
+            self.lb_config = {
+                'lb_s11_ip_addr': self.lb.s11_ip,
+                'lb_s1_ip_addr': self.lb.s1_ip,
+                'lb_s5_ip_addr': self.lb_s5_ip,
+                'lb_s11_port': self.lb_s11_port,
+                'lb_s1_port': self.lb_s1_port,
+                'lb_s5_port': self.lb_s5_port,
+                'sgw_s11_ip_addrs': self.sgw.s11_ip.split(','),
+                'sgw_s1_ip_addrs': self.sgw.s1_ip.split(','),
+                'sgw_s5_ip_addrs': self.sgw.s5_ip.split(',')
+            }
+
+    def _init_hosts(self):
+        if not self.isPp:
+            self.hosts = {
+                'hss': {
+                    'host_name': '%s.openair4G.eur' % self.hosts.hss,
+                    'ip': self.hss.s11_ip
+                },
+                'mme': {
+                    'host_name': '%s.openair4G.eur' % self.hosts.mme,
+                    'ip': self.mme.s11_ip
+                },
+                'spgw': {
+                    'host_name': '%s.openair4G.eur' % self.hosts.sgw,
+                    'ip': self.sgw.s11_ip
+                }
+            }
 
     def _init_hss_config(self):
         if self.isPp:
             self.hss_config = {
-                'threads_count': '2',
-                'ip': self.hss_data,
-                'ds_ip': self.ds_ip,
+                'threads_count': self.hss.thread_counts,
+                'ip': self.hss.s11_ip,
+                'ds_ip': self.ds.ip,
             }
         else:
             self.hss_config = {
@@ -88,49 +148,66 @@ class Client(object):
     def _init_mme_config(self):
         if self.isPp:
             self.mme_config = {
-                'threads_count': '2',
-                'hss_ip': self.hss_data,
-                'sgw_s1_ip': self.spgw_s1_ip,
-                'sgw_s11_ip': self.spgw_data,
-                'sgw_s5_ip': self.sgw_s5_ip,
-                'ds_ip': self.ds_ip,
-                'mme_s1_ip': self.mme_s1_ip,
-                'mme_s11_ip': self.mme_data,
-                'pgw_s5_ip': self.pgw_s5_ip,
-                'trafmon_ip': self.trafmon_ip
+                'threads_count': self.mme.thread_counts,
+                'hss_ip': self.hss.s11_ip,
+                'sgw_s1_ip': self.sgw.s1_ip,
+                'sgw_s11_ip': self.sgw.s11_ip,
+                'sgw_s5_ip': self.sgw.s5_ip,
+                'ds_ip': self.ds.ip,
+                'mme_s1_ip': self.mme.s1_ip,
+                'mme_s11_ip': self.mme.s11_ip,
+                'pgw_s5_ip': self.pgw.s5_ip,
+                'trafmon_ip': self.mme.trafmon_ip
             }
         else:
             self.mme_config = {
                 'hosts': self.hosts,
-                's1_ip': self.mme_s1_ip
+                's1_ip': self.mme.s1_ip
             }
 
     def _init_spgw_config(self):
         if self.isPp:
             self.pgw_config = {
-                's5_threads_count': '2',
-                'sgi_threads_count': '2',
-                'sgw_s5_ip': self.sgw_s5_ip,
-                'pgw_s5_ip': self.pgw_s5_ip,
-                'pgw_sgi_ip': self.spgw_sgi_ip,
-                'ds_ip': self.ds_ip,
-                'sink_ip_addr': self.sink_ip
+                's5_threads_count': self.pgw.s5_threads_count,
+                'sgi_threads_count': self.pgw.sgi_threads_count,
+                'sgw_s5_ip': self.sgw.s5_ip,
+                'pgw_s5_ip': self.pgw.s5_ip,
+                'pgw_sgi_ip': self.pgw.sgi_ip,
+                'ds_ip': self.ds.ip,
+                'sink_ip_addr': self.pgw.sink_ip
             }
-            self.sgw_config = {
-                's11_threads_count': '2',
-                's1_threads_count': '2',
-                's5_threads_count': '2',
-                'sgw_s11_ip_addr': self.spgw_data,
-                'sgw_s1_ip_addr': self.spgw_s1_ip,
-                'sgw_s5_ip_addr': self.sgw_s5_ip,
-                'ds_ip': self.ds_ip,
-                'pgw_s5_ip_addr': self.pgw_s5_ip
-            }
+            mgmts = self.sgw.mgmt_ip.split(',')
+            s11s = self.sgw.s11_ip.split(',')
+            s1s = self.sgw.s1_ip.split(',')
+            s5s = self.sgw.s5_ip.split(',')
+            if len(mgmts) is not len(s11s) or \
+                len(mgmts) is not len(s1s) or \
+                len(mgmts) is not len(s5s):
+                raise Exception('Comman separted list of IPs for'
+                                'SGW-MGMT, SGW-S11, SGW-S5, SGW-S1'
+                                'must be the same lenght')
+
+            self.sgw_config = []
+            for mgmt, s11, s1, s5 in zip(mgmts, s11s, s1s, s5s):
+                config = {
+                    's11_threads_count': self.sgw.s11_threads_count,
+                    's1_threads_count': self.sgw.s1_threads_count,
+                    's5_threads_count': self.sgw.s5_threads_count,
+                    'sgw_s11_ip_addr': s11,
+                    'sgw_s1_ip_addr': s1,
+                    'sgw_s5_ip_addr':s5,
+                    'ds_ip': self.ds.ip,
+                    'pgw_s5_ip_addr': self.pgw.s5_ip,
+                    'lb_s11_ip': self.lb.s11_ip,
+                    'lb_s1_ip': self.lb.s1_ip,
+                    'lb_s5_ip': self.lb.s5_ip
+                }
+                self.sgw_config.append(config)
         else:
             self.spgw_config = {
                 'hosts': self.hosts,
-                'sgi_ip': self.spgw_sgi_ip,
-                's1u_ip': self.spgw_s1_ip
+                'sgi_ip': self.pgw.sgi_ip,
+                's1u_ip': self.sgw.s1_ip
             }
 
     def start(self):
@@ -174,24 +251,35 @@ def parseNetworkArgs(argv):
                                  help='External IP of SPGW')
     return parser.parse_known_args(argv)
 
-def parseScenarioSelection(argv):
+def parsePPScenarioSpecific(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--oai', action='store_true', dest='oai',
-                        default=False, help='OpenAirInterface')
-    parser.add_argument('--pp', action='store_true', dest='pp',
-                        default=False, help='Pratik Satapathy')
-    parser.add_argument('--sgw_s5_ip', required=False,
+    parser.add_argument('--sgw_s5_ip', required=True,
                         help='S5 IP of SGW')
-    parser.add_argument('--pgw_s5_ip', required=False,
+    parser.add_argument('--pgw_s5_ip', required=True,
                         help='S5 IP of PGW')
-    parser.add_argument('--trafmon_ip', required=False,
+    parser.add_argument('--trafmon_ip', required=True,
                         help='IP of traffic monitor')
-    parser.add_argument('--sink_ip', required=False,
+    parser.add_argument('--sink_ip', required=True,
                         help='IP of sink')
-    parser.add_argument('--pgw_mgmt', required=False,
+    parser.add_argument('--pgw_mgmt', required=True,
                         help='Management IP of PGW')
-    parser.add_argument('--ds_ip', required=False,
+    parser.add_argument('--ds_ip', required=True,
                         help='IP of the common datastore')
+
+    parser.add_argument('--lb_mgmt', required=True,
+                        help='IP of the load balancer')
+    parser.add_argument('--lb_s11_ip', required=True,
+                        help='IP of the load balancer for SGW-S11')
+    parser.add_argument('--lb_s11_port', required=True,
+                        help='Port of the load balancer for SGW-S11')
+    parser.add_argument('--lb_s1_ip', required=True,
+                        help='IP of the load balancer for SGW-S1')
+    parser.add_argument('--lb_s1_port', required=True,
+                        help='Port of the load balancer for SGW-S1')
+    parser.add_argument('--lb_s5_ip', required=True,
+                        help='IP of the load balancer for SGW-S5')
+    parser.add_argument('--lb_s5_port', required=True,
+                        help='Port of the load balancer for SGW-S5')
     return parser.parse_known_args(argv)
 
 def parseGeneralArgs(argv):
@@ -200,13 +288,18 @@ def parseGeneralArgs(argv):
                         default=False, help='Verbose')
     parser.add_argument('--stop','-s', action='store_true', dest='stop',
                         default=False, help='Verbose')
+    parser.add_argument('--oai', action='store_true', dest='oai',
+                        default=False, help='OpenAirInterface')
+    parser.add_argument('--pp', action='store_true', dest='pp',
+                        default=False, help='Pratik Satapathy')
     return parser.parse_known_args(argv)
 
 
 def main(argv = sys.argv[1:]):
     generalArgs, remaining_argv = parseGeneralArgs(argv)
     networkArgs, remaining_argv = parseNetworkArgs(remaining_argv)
-    scenarioArgs, remaining_argv = parseScenarioSelection(remaining_argv)
+    if generalArgs.pp:
+        scenarioArgs, remaining_argv = parsePPScenarioSpecific(remaining_argv)
     configArgs = parseConfigArgs(remaining_argv)
 
     if generalArgs.verbose:
@@ -221,41 +314,37 @@ def main(argv = sys.argv[1:]):
         logger.info('%s -> %s', param, configDict[param])
 
     if scenarioArgs.oai:
-        c = Client(hss_mgmt = configArgs.hss_mgmt, hss_data = configArgs.hss_data,
-                mme_mgmt = configArgs.mme_mgmt, mme_data = configArgs.mme_data,
-                spgw_mgmt = configArgs.spgw_mgmt, spgw_data = configArgs.spgw_data,
-                hss_host = configArgs.hss_host, mme_host = configArgs.mme_host,
-                spgw_host = configArgs.spgw_host,
-                mme_s1_ip = networkArgs.mme_s1_ip,
-                spgw_s1_ip = networkArgs.spgw_s1_ip,
-                spgw_sgi_ip = networkArgs.spgw_sgi_ip)
-    elif scenarioArgs.pp and \
-        scenarioArgs.sgw_s5_ip is not None and \
-        scenarioArgs.pgw_s5_ip is not None and \
-        scenarioArgs.pgw_mgmt is not None and \
-        scenarioArgs.ds_ip is not None and \
-        scenarioArgs.trafmon_ip is not None and \
-        scenarioArgs.sink_ip is not None:
-        c = Client(hss_mgmt = configArgs.hss_mgmt, hss_data = configArgs.hss_data,
-                mme_mgmt = configArgs.mme_mgmt, mme_data = configArgs.mme_data,
-                spgw_mgmt = configArgs.spgw_mgmt, spgw_data = configArgs.spgw_data,
-                hss_host = configArgs.hss_host, mme_host = configArgs.mme_host,
-                spgw_host = configArgs.spgw_host,
-                mme_s1_ip = networkArgs.mme_s1_ip,
-                spgw_s1_ip = networkArgs.spgw_s1_ip,
-                spgw_sgi_ip = networkArgs.spgw_sgi_ip,
-                sgw_s5_ip = scenarioArgs.sgw_s5_ip,
-                pgw_s5_ip = scenarioArgs.pgw_s5_ip,
-                sink_ip = scenarioArgs.sink_ip,
-                trafmon_ip = scenarioArgs.trafmon_ip,
-                pgw_mgmt = scenarioArgs.pgw_mgmt,
-                ds_ip = scenarioArgs.ds_ip,
-                isPp = True)
+        c = Client(
+            hss = Hss(configArg.hss_mgmt, configArgs.hss_data, None),
+            mme = Mme(configArgs.mme_mgmt, configArgs.mme_data,
+                      networkArgs.mme_s1_ip, None, None),
+            sgw = Sgw(configArgs.spgw_mgmt, configArgs.spgw_data,
+                      networkArgs.spgw_s1_ip, None, None, None, None),
+            pgw = Pgw(self, None, None, networkArgs.spgw_sgi_ip,
+                      None, None, None),
+            hosts = HostNames(configArgs.hss_host, configArgs.mme_host,
+                              configArgs.spgw_host),
+            ds = None,
+            lb = None)
+    elif scenarioArgs.pp:
+        c = Client(
+                hss = Hss(configArg.hss_mgmt, configArgs.hss_data, '2'),
+                mme = Mme(configArgs.mme_mgmt, configArgs.mme_data,
+                          networkArgs.mme_s1_ip, '2', scenarioArgs.trafmon_ip),
+                sgw = Sgw(configArgs.spgw_mgmt, configArgs.spgw_data,
+                          networkArgs.spgw_s1_ip, scenarioArgs.sgw_s5_ip,
+                          '2', '2', '2'),
+                pgw = Pgw(self, scenarioArgs.pgw_mgmt, scenarioArgs.pgw_s5_ip,
+                          networkArgs.spgw_sgi_ip, scenarioArgs.sink_ip,
+                          '2', '2'),
+                ds = Ds(scenarioArgs.ds_ip),
+                lb = Lb(scenarioArgs.lb_mgmt, scenarioArgs.lb_s11_ip,
+                        scenarioArgs.lb_s1_ip, scenarioArgs.lb_s5_ip,
+                        scenarioArgs.lb_s11_port, scenarioArgs.lb_s1_port,
+                        scenarioArgs.lb_s5_port),
+                hosts = None)
     else:
         logger.error('--oai or --pp must be specified to select EPC implementation')
-        logger.error('--pp needs the IPs of S5 interfaces,'
-                     'the IP of the PGW\'s mgmt and the IP of sink and the IP of the datastore '
-                     '(--sgw_s5_ip, --pgw_s5_ip, --pgw_mgmt and --sink_ip --ds_ip --trafmon_ip)')
         return
 
 
