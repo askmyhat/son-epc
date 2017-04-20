@@ -172,9 +172,9 @@ class SGW_Processor(P):
             self._del_iptables(self._sgw_config.lb_s11_ip_addr)
             self._del_iptables(self._sgw_config.lb_s1_ip_addr)
             self._del_iptables(self._sgw_config.lb_s5_ip_addr)
-            self._add_iptables(self._sgw_config.lb_s11_ip_addr)
-            self._add_iptables(self._sgw_config.lb_s1_ip_addr)
-            self._add_iptables(self._sgw_config.lb_s5_ip_addr)
+            self._add_iptables(self.new_swg_config.lb_s11_ip_addr)
+            self._add_iptables(self.new_swg_config.lb_s1_ip_addr)
+            self._add_iptables(self.new_swg_config.lb_s5_ip_addr)
 
     def _del_iptables(self, ip):
         if ip is None:
