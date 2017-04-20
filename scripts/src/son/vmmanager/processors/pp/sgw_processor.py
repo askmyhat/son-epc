@@ -173,9 +173,9 @@ class SGW_Processor(P):
             self._del_iptables(self._sgw_config.lb_s11_ip)
             self._del_iptables(self._sgw_config.lb_s1_ip)
             self._del_iptables(self._sgw_config.lb_s5_ip)
-            self._add_iptables(self.new_sgw_config.lb_s11_ip)
-            self._add_iptables(self.new_sgw_config.lb_s1_ip)
-            self._add_iptables(self.new_sgw_config.lb_s5_ip)
+            self._add_iptables(new_sgw_config.lb_s11_ip)
+            self._add_iptables(new_sgw_config.lb_s1_ip)
+            self._add_iptables(new_sgw_config.lb_s5_ip)
         else:
             self.logger.warn('LB config is not complet: %s, %s, %s',
                               new_sgw_config.lb_s11_ip,
