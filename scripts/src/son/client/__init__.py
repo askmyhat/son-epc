@@ -23,7 +23,7 @@ class Hss(object):
 
 class Mme(object):
     def __init__(self, mgmt_ip, s11_ip, s1_ip, threads_count, trafmon_ip):
-        self.threads_count = thread_count
+        self.threads_count = threads_count
         self.mgmt_ip = mgmt_ip
         self.s11_ip = s11_ip
         self.s1_ip = s1_ip
@@ -77,13 +77,13 @@ class Client(object):
     def _init_connection(self, isStopping = False):
         if self.isPp:
             sgw_mgmts = self.sgw.mgmt_ip.split(',')
-            sgw_configs = zip(sgw_mgmts, self.sgw_config)
-            self.factory = ClientFactory([
-                (self.hss.mgmt_ip, self.hss_config),
+            clients = [(self.hss.mgmt_ip, self.hss_config),
                 (self.mme.mgmt_ip, self.mme_config),
                 (self.pgw.mgmt_ip, self.pgw_config),
-                (self.lb.mgmt_ip, self.lb_config)
-            ] + sgw_configs, isStopping = isStopping)
+                (self.lb.mgmt_ip, self.lb_config)]
+            for mgmt, config in zip(sgw_mgmts, self.sgw_config):
+                clients.append((mgmt, config))
+            self.factory = ClientFactory(clients, isStopping = isStopping)
         else:
             self.factory = ClientFactory([
                 (self.hss.mgmt_ip, self.hss_config),
@@ -96,17 +96,17 @@ class Client(object):
         self._init_hss_config()
         self._init_mme_config()
         self._init_spgw_config()
-        self.__init_lb_config()
+        self._init_lb_config()
 
     def _init_lb_config(self):
         if self.isPp:
             self.lb_config = {
                 'lb_s11_ip_addr': self.lb.s11_ip,
                 'lb_s1_ip_addr': self.lb.s1_ip,
-                'lb_s5_ip_addr': self.lb_s5_ip,
-                'lb_s11_port': self.lb_s11_port,
-                'lb_s1_port': self.lb_s1_port,
-                'lb_s5_port': self.lb_s5_port,
+                'lb_s5_ip_addr': self.lb.s5_ip,
+                'lb_s11_port': self.lb.s11_port,
+                'lb_s1_port': self.lb.s1_port,
+                'lb_s5_port': self.lb.s5_port,
                 'sgw_s11_ip_addrs': self.sgw.s11_ip.split(','),
                 'sgw_s1_ip_addrs': self.sgw.s1_ip.split(','),
                 'sgw_s5_ip_addrs': self.sgw.s5_ip.split(',')
@@ -114,7 +114,7 @@ class Client(object):
 
     def _init_hosts(self):
         if not self.isPp:
-            self.hosts = {
+            self.hostsConfig = {
                 'hss': {
                     'host_name': '%s.openair4G.eur' % self.hosts.hss,
                     'ip': self.hss.s11_ip
@@ -132,13 +132,13 @@ class Client(object):
     def _init_hss_config(self):
         if self.isPp:
             self.hss_config = {
-                'threads_count': self.hss.thread_counts,
+                'threads_count': self.hss.threads_count,
                 'ip': self.hss.s11_ip,
                 'ds_ip': self.ds.ip,
             }
         else:
             self.hss_config = {
-                'hosts': self.hosts,
+                'hosts': self.hostsConfig,
                 'mysql': {
                     'user': 'root',
                     'pass': 'hurka'
@@ -148,7 +148,7 @@ class Client(object):
     def _init_mme_config(self):
         if self.isPp:
             self.mme_config = {
-                'threads_count': self.mme.thread_counts,
+                'threads_count': self.mme.threads_count,
                 'hss_ip': self.hss.s11_ip,
                 'sgw_s1_ip': self.sgw.s1_ip,
                 'sgw_s11_ip': self.sgw.s11_ip,
@@ -161,7 +161,7 @@ class Client(object):
             }
         else:
             self.mme_config = {
-                'hosts': self.hosts,
+                'hosts': self.hostsConfig,
                 's1_ip': self.mme.s1_ip
             }
 
@@ -205,7 +205,7 @@ class Client(object):
                 self.sgw_config.append(config)
         else:
             self.spgw_config = {
-                'hosts': self.hosts,
+                'hosts': self.hostsConfig,
                 'sgi_ip': self.pgw.sgi_ip,
                 's1u_ip': self.sgw.s1_ip
             }
@@ -303,6 +303,13 @@ def main(argv = sys.argv[1:]):
     generalArgs, remaining_argv = parseGeneralArgs(argv)
     networkArgs, remaining_argv = parseNetworkArgs(remaining_argv)
 
+    if generalArgs.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+
+
     if generalArgs.pp:
         scenarioArgs, remaining_argv = parsePPScenarioSpecific(remaining_argv)
     elif generalArgs.oai:
@@ -313,50 +320,45 @@ def main(argv = sys.argv[1:]):
 
     configArgs = parseConfigArgs(remaining_argv)
 
-    if generalArgs.verbose:
-        logging.basicConfig(level=logging.DEBUG)
-    else:
-        logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
-
     logger.info('Got cli parameters:')
     configDict = vars(configArgs)
     for param in configDict:
         logger.info('%s -> %s', param, configDict[param])
 
     if generalArgs.oai:
-        c = Client(
-            hss = Hss(configArg.hss_mgmt, configArgs.hss_data, None),
-            mme = Mme(configArgs.mme_mgmt, configArgs.mme_data,
-                      networkArgs.mme_s1_ip, None, None),
-            sgw = Sgw(configArgs.spgw_mgmt, configArgs.spgw_data,
-                      networkArgs.spgw_s1_ip, None, None, None, None),
-            pgw = Pgw(self, None, None, networkArgs.spgw_sgi_ip,
-                      None, None, None),
-            hosts = HostNames(hostArgs.hss_host, hostArgs.mme_host,
-                              hostArgs.spgw_host),
-            ds = None,
-            lb = None)
+        client = Client(
+            hss=Hss(configArgs.hss_mgmt, configArgs.hss_data, None),
+            mme=Mme(configArgs.mme_mgmt, configArgs.mme_data,
+                    networkArgs.mme_s1_ip, None, None),
+            sgw=Sgw(configArgs.spgw_mgmt, configArgs.spgw_data,
+                    networkArgs.spgw_s1_ip, None, None, None, None),
+            pgw=Pgw(None, None, networkArgs.spgw_sgi_ip,
+                    None, None, None),
+            hosts=HostNames(hostArgs.hss_host, hostArgs.mme_host,
+                            hostArgs.spgw_host),
+            ds=None,
+            lb=None)
     elif generalArgs.pp:
-        c = Client(
-                hss = Hss(configArg.hss_mgmt, configArgs.hss_data, '2'),
-                mme = Mme(configArgs.mme_mgmt, configArgs.mme_data,
-                          networkArgs.mme_s1_ip, '2', scenarioArgs.trafmon_ip),
-                sgw = Sgw(configArgs.spgw_mgmt, configArgs.spgw_data,
-                          networkArgs.spgw_s1_ip, scenarioArgs.sgw_s5_ip,
-                          '2', '2', '2'),
-                pgw = Pgw(self, scenarioArgs.pgw_mgmt, scenarioArgs.pgw_s5_ip,
-                          networkArgs.spgw_sgi_ip, scenarioArgs.sink_ip,
-                          '2', '2'),
-                ds = Ds(scenarioArgs.ds_ip),
-                lb = Lb(scenarioArgs.lb_mgmt, scenarioArgs.lb_s11_ip,
-                        scenarioArgs.lb_s1_ip, scenarioArgs.lb_s5_ip,
-                        scenarioArgs.lb_s11_port, scenarioArgs.lb_s1_port,
-                        scenarioArgs.lb_s5_port),
-                hosts = None)
+        client = Client(
+            hss=Hss(configArgs.hss_mgmt, configArgs.hss_data, '2'),
+            mme=Mme(configArgs.mme_mgmt, configArgs.mme_data,
+                    networkArgs.mme_s1_ip, '2', scenarioArgs.trafmon_ip),
+            sgw=Sgw(configArgs.spgw_mgmt, configArgs.spgw_data,
+                    networkArgs.spgw_s1_ip, scenarioArgs.sgw_s5_ip,
+                    '2', '2', '2'),
+            pgw=Pgw(scenarioArgs.pgw_mgmt, scenarioArgs.pgw_s5_ip,
+                    networkArgs.spgw_sgi_ip, scenarioArgs.sink_ip,
+                    '2', '2'),
+            ds=Ds(scenarioArgs.ds_ip),
+            lb=Lb(scenarioArgs.lb_mgmt, scenarioArgs.lb_s11_ip,
+                  scenarioArgs.lb_s1_ip, scenarioArgs.lb_s5_ip,
+                  scenarioArgs.lb_s11_port, scenarioArgs.lb_s1_port,
+                  scenarioArgs.lb_s5_port),
+            hosts=None,
+            isPp=generalArgs.pp)
 
 
     if generalArgs.stop:
-        c.stop()
+        client.stop()
     else:
-        c.start()
+        client.start()

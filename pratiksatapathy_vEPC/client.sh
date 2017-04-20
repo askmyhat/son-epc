@@ -4,25 +4,35 @@ mme_mgmt=`sudo docker inspect mme_pp | jq '.[0].NetworkSettings.Networks.pratiks
 mme_data=$mme_mgmt
 pgw_mgmt=`sudo docker inspect pgw_pp | jq '.[0].NetworkSettings.Networks.pratiksatapathyvepc_default.IPAddress' | sed 's/"//g'`
 pgw_data=$pgw_mgmt
-sgw_mgmt=`sudo docker inspect sgw_pp | jq '.[0].NetworkSettings.Networks.pratiksatapathyvepc_default.IPAddress' | sed 's/"//g'`
-spgw_data=$sgw_mgmt
+sgw_mgmt_1=`sudo docker inspect sgw_pp_1 | jq '.[0].NetworkSettings.Networks.pratiksatapathyvepc_default.IPAddress' | sed 's/"//g'`
+sgw_mgmt_2=`sudo docker inspect sgw_pp_2 | jq '.[0].NetworkSettings.Networks.pratiksatapathyvepc_default.IPAddress' | sed 's/"//g'`
+sgw_data_1=$sgw_mgmt_1
+sgw_data_2=$sgw_mgmt_2
 hss_host=`sudo docker inspect hss_pp | jq '.[0].Config.Hostname' | sed 's/"//g'`
 mme_host=`sudo docker inspect mme_pp | jq '.[0].Config.Hostname' | sed 's/"//g'`
 pgw_host=`sudo docker inspect pgw_pp | jq '.[0].Config.Hostname' | sed 's/"//g'`
-sgw_host=`sudo docker inspect sgw_pp | jq '.[0].Config.Hostname' | sed 's/"//g'`
+sgw_host_1=`sudo docker inspect sgw_pp_1 | jq '.[0].Config.Hostname' | sed 's/"//g'`
+sgw_host_2=`sudo docker inspect sgw_pp_2 | jq '.[0].Config.Hostname' | sed 's/"//g'`
 ds_ip=$hss_data
+local_ip=`sudo docker inspect hss_pp | jq '.[0].NetworkSettings.Networks | map(.Gateway)[0]' | sed 's/"//g'`
+lb_ip=`sudo docker inspect lb_pp | jq '.[0].NetworkSettings.Networks | map(.IPAddress)[0]' | sed 's/"//g'`
 
-echo "$hss_host: $hss_mgmt ($hss_data)"
-echo "$mme_host: $mme_mgmt ($mme_data)"
-echo "$sgw_host: $sgw_mgmt ($spgw_data)"
-echo "$pgw_host: $pgw_mgmt ($spgw_data)"
+echo "HSS: $hss_host: $hss_mgmt ($hss_data)"
+echo "MME: $mme_host: $mme_mgmt ($mme_data)"
+echo "SGW_1: $sgw_host_1: $sgw_mgmt_1 ($sgw_data_1)"
+echo "SGW_2: $sgw_host_2: $sgw_mgmt_2 ($sgw_data_2)"
+echo "PGW: $pgw_host: $pgw_mgmt ($pgw_data)"
+echo "local_ip: $local_ip"
+echo "lb_ip: $lb_ip"
 
 args="--hss_mgmt $hss_mgmt --hss_data $hss_data"
 args+=" --mme_mgmt $mme_mgmt --mme_data $mme_data"
-args+=" --spgw_mgmt $sgw_mgmt --spgw_data $spgw_data"
-args+=" --pgw_mgmt $pgw_mgmt --sgw_s5_ip $spgw_data --pgw_s5_ip $pgw_data --sink_ip $pgw_mgmt --pp"
-args+=" --hss_host $hss_host --mme_host $mme_host --spgw_host $sgw_host"
+args+=" --spgw_mgmt $sgw_mgmt_1,$sgw_mgmt_2"
+args+=" --spgw_data $sgw_data_1,$sgw_mgmt_2"
+args+=" --pgw_mgmt $pgw_mgmt --sgw_s5_ip $sgw_data_1,$sgw_data_2 --pgw_s5_ip $pgw_data --sink_ip $pgw_mgmt --pp"
 args+=" --mme_s1_ip $mme_data"
-args+=" --spgw_s1_ip $spgw_data --spgw_sgi_ip $pgw_data"
-args+=" --ds_ip $ds_ip"
+args+=" --spgw_s1_ip $sgw_data_1,$sgw_data_2 --spgw_sgi_ip $pgw_data"
+args+=" --ds_ip $ds_ip --trafmon_ip $local_ip"
+args+=" --lb_s1_ip $lb_ip  --lb_s11_ip $lb_ip  --lb_s5_ip $lb_ip"
+args+=" --lb_mgmt $lb_ip"
 son-vm-client $args $@

@@ -2,7 +2,7 @@ FROM ubuntu
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
-RUN apt-get install -q -y git sudo wget software-properties-common make python3 libpython3-dev
+RUN apt-get install -q -y git sudo wget software-properties-common make python3 libpython3-dev iptables
 
 WORKDIR /root
 RUN wget https://bootstrap.pypa.io/get-pip.py

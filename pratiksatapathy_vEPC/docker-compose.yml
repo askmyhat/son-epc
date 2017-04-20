@@ -42,12 +42,22 @@ services:
     depends_on:
       - epc_base
 
-  sgw_pp:
+  sgw_pp_1:
     build:
       context: .
       dockerfile: Dockerfile.sgw
     image: sgw_pp:SNAPSHOT
-    container_name: sgw_pp
+    container_name: sgw_pp_1
+    depends_on:
+      - epc_base
+    privileged: true
+
+  sgw_pp_2:
+    build:
+      context: .
+      dockerfile: Dockerfile.sgw
+    image: sgw_pp:SNAPSHOT
+    container_name: sgw_pp_2
     depends_on:
       - epc_base
     privileged: true
