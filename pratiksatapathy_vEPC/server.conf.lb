@@ -1,0 +1,2 @@
+[processors]
+mme=son.vmmanager.processors.pp.lb_processor.LB_Processor

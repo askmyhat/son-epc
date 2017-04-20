@@ -1,0 +1,3 @@
+FROM epc_base:SNAPSHOT
+
+CMD son-vm-server -v -c /root/son-epc/pratiksatapathy_vEPC/server.conf.lb

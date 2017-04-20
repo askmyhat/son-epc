@@ -50,3 +50,14 @@ services:
     container_name: sgw_pp
     depends_on:
       - epc_base
+    privileged: true
+
+  lb_pp:
+    build:
+      context: .
+      dockerfile: Dockerfile.lb
+    image: lb_pp:SNAPSHOT
+    container_name: lb_pp
+    depends_on:
+      - epc_base
+    privileged: true
