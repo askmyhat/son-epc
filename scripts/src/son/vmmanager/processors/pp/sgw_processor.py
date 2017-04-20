@@ -14,9 +14,9 @@ class SGW_MessageParser(object):
     MSG_SGW_S1_IP_ADDR = 'sgw_s1_ip_addr'
     MSG_SGW_S5_IP_ADDR = 'sgw_s5_ip_addr'
     MSG_PGW_S5_IP_ADDR = 'pgw_s5_ip_addr'
-    MSG_LB_S11_IP_ADDR = 'lb_s11_ip_addr'
-    MSG_LB_S1_IP_ADDR = 'lb_s1_ip_addr'
-    MSG_LB_S5_IP_ADDR = 'lb_s5_ip_addr'
+    MSG_LB_S11_IP_ADDR = 'lb_s11_ip'
+    MSG_LB_S1_IP_ADDR = 'lb_s1_ip'
+    MSG_LB_S5_IP_ADDR = 'lb_s5_ip'
     MSG_DS_IP = 'ds_ip'
     MSG_DS_PORT = 'ds_port'
     MSG_SGW_S11_PORT = 'sgw_s11_port'
@@ -51,8 +51,8 @@ class SGW_Config(utils.CommandConfig):
     def __init__(self, s11_threads_count = None, s1_threads_count = None,
                  s5_threads_count = None, sgw_s11_ip_addr = None,
                  sgw_s1_ip_addr = None, sgw_s5_ip_addr = None,
-                 lb_s11_ip_addr = None,
-                 lb_s1_ip_addr = None, lb_s5_ip_addr = None,
+                 lb_s11_ip = None,
+                 lb_s1_ip = None, lb_s5_ip = None,
                  pgw_s5_ip_addr = None, ds_ip = None, ds_port = None,
                  sgw_s11_port = None, sgw_s1_port = None, sgw_s5_port = None,
                  pgw_s5_port = None, **kwargs):
@@ -62,9 +62,9 @@ class SGW_Config(utils.CommandConfig):
         self.sgw_s11_ip_addr = sgw_s11_ip_addr
         self.sgw_s1_ip_addr = sgw_s1_ip_addr
         self.sgw_s5_ip_addr = sgw_s5_ip_addr
-        self.lb_s11_ip_addr = lb_s11_ip_addr
-        self.lb_s1_ip_addr = lb_s1_ip_addr
-        self.lb_s5_ip_addr = lb_s5_ip_addr
+        self.lb_s11_ip = lb_s11_ip
+        self.lb_s1_ip = lb_s1_ip
+        self.lb_s5_ip = lb_s5_ip
         self.pgw_s5_ip_addr = pgw_s5_ip_addr
         self.ds_ip = ds_ip
         self.ds_port = ds_port
@@ -91,12 +91,12 @@ class SGW_Config(utils.CommandConfig):
           self.sgw_s1_ip_addr = sgw_config.sgw_s1_ip_addr
         if sgw_config.sgw_s5_ip_addr is not None:
           self.sgw_s5_ip_addr = sgw_config.sgw_s5_ip_addr
-        if sgw_config.lb_s11_ip_addr is not None:
-          self.lb_s11_ip_addr = sgw_config.lb_s11_ip_addr
-        if sgw_config.lb_s1_ip_addr is not None:
-          self.lb_s1_ip_addr = sgw_config.lb_s1_ip_addr
-        if sgw_config.lb_s5_ip_addr is not None:
-          self.lb_s5_ip_addr = sgw_config.lb_s5_ip_addr
+        if sgw_config.lb_s11_ip is not None:
+          self.lb_s11_ip = sgw_config.lb_s11_ip
+        if sgw_config.lb_s1_ip is not None:
+          self.lb_s1_ip = sgw_config.lb_s1_ip_addr
+        if sgw_config.lb_s5_ip is not None:
+          self.lb_s5_ip = sgw_config.lb_s5_ip_addr
         if sgw_config.pgw_s5_ip_addr is not None:
           self.pgw_s5_ip_addr = sgw_config.pgw_s5_ip_addr
         if sgw_config.ds_ip is not None:
@@ -165,22 +165,22 @@ class SGW_Processor(P):
 
     def _handle_loadbalancing(self, new_sgw_config):
         self.logger.debug('Handle loadbalancing setup (iptables)')
-        isLb = new_sgw_config.lb_s11_ip_addr is not None
-        isLb = isLb and new_sgw_config.lb_s1_ip_addr is not None
-        isLb = isLb and new_sgw_config.lb_s5_ip_addr is not None
+        isLb = new_sgw_config.lb_s11_ip is not None
+        isLb = isLb and new_sgw_config.lb_s1_ip is not None
+        isLb = isLb and new_sgw_config.lb_s5_ip is not None
 
         if isLb:
-            self._del_iptables(self._sgw_config.lb_s11_ip_addr)
-            self._del_iptables(self._sgw_config.lb_s1_ip_addr)
-            self._del_iptables(self._sgw_config.lb_s5_ip_addr)
-            self._add_iptables(self.new_sgw_config.lb_s11_ip_addr)
-            self._add_iptables(self.new_sgw_config.lb_s1_ip_addr)
-            self._add_iptables(self.new_sgw_config.lb_s5_ip_addr)
+            self._del_iptables(self._sgw_config.lb_s11_ip)
+            self._del_iptables(self._sgw_config.lb_s1_ip)
+            self._del_iptables(self._sgw_config.lb_s5_ip)
+            self._add_iptables(self.new_sgw_config.lb_s11_ip)
+            self._add_iptables(self.new_sgw_config.lb_s1_ip)
+            self._add_iptables(self.new_sgw_config.lb_s5_ip)
         else:
             self.logger.warn('LB config is not complet: %s, %s, %s',
-                              new_sgw_config.lb_s11_ip_addr,
-                              new_sgw_config.lb_s1_ip_addr,
-                              new_sgw_config.lb_s5_ip_addr)
+                              new_sgw_config.lb_s11_ip,
+                              new_sgw_config.lb_s1_ip,
+                              new_sgw_config.lb_s5_ip)
 
     def _del_iptables(self, ip):
         if ip is None:
