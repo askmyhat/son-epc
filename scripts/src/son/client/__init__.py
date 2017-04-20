@@ -225,21 +225,25 @@ def parseConfigArgs(argv):
                                  help='Management address for HSS')
     configArguments.add_argument('--hss_data', required=True,
                                  help='Data plane address for HSS')
-    configArguments.add_argument('--hss_host', required=True,
-                                 help='Hostname for HSS')
     configArguments.add_argument('--mme_mgmt', required=True,
                                  help='Management address for MME')
     configArguments.add_argument('--mme_data', required=True,
                                  help='Data plane address for MME')
-    configArguments.add_argument('--mme_host', required=True,
-                                 help='Hostname for MME')
     configArguments.add_argument('--spgw_mgmt', required=True,
                                  help='Management address for SPGW')
     configArguments.add_argument('--spgw_data', required=True,
                                  help='Data plane address for SPGW')
-    configArguments.add_argument('--spgw_host', required=True,
-                                 help='Hostname for SPGW')
     return configArguments.parse_args(argv)
+
+def parseOAIScenarioSpecific(argv):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--hss_host', required=True,
+                        help='Hostname for HSS')
+    parser.add_argument('--spgw_host', required=True,
+                        help='Hostname for SPGW')
+    parser.add_argument('--mme_host', required=True,
+                        help='Hostname for MME')
+    return parser.parse_known_args(argv)
 
 def parseNetworkArgs(argv):
     parser = argparse.ArgumentParser()
@@ -298,8 +302,15 @@ def parseGeneralArgs(argv):
 def main(argv = sys.argv[1:]):
     generalArgs, remaining_argv = parseGeneralArgs(argv)
     networkArgs, remaining_argv = parseNetworkArgs(remaining_argv)
+
     if generalArgs.pp:
         scenarioArgs, remaining_argv = parsePPScenarioSpecific(remaining_argv)
+    elif generalArgs.oai:
+        hostArgs, remaining_argv = parseOAIScenarioSpecific(remaining_argv)
+    else:
+        logger.error('--oai or --pp must be specified to select EPC implementation')
+        return
+
     configArgs = parseConfigArgs(remaining_argv)
 
     if generalArgs.verbose:
@@ -322,8 +333,8 @@ def main(argv = sys.argv[1:]):
                       networkArgs.spgw_s1_ip, None, None, None, None),
             pgw = Pgw(self, None, None, networkArgs.spgw_sgi_ip,
                       None, None, None),
-            hosts = HostNames(configArgs.hss_host, configArgs.mme_host,
-                              configArgs.spgw_host),
+            hosts = HostNames(hostArgs.hss_host, hostArgs.mme_host,
+                              hostArgs.spgw_host),
             ds = None,
             lb = None)
     elif scenarioArgs.pp:
@@ -343,9 +354,6 @@ def main(argv = sys.argv[1:]):
                         scenarioArgs.lb_s11_port, scenarioArgs.lb_s1_port,
                         scenarioArgs.lb_s5_port),
                 hosts = None)
-    else:
-        logger.error('--oai or --pp must be specified to select EPC implementation')
-        return
 
 
     if generalArgs.stop:
