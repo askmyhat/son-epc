@@ -178,9 +178,9 @@ class SGW_Processor(P):
             self._add_iptables(self.new_sgw_config.lb_s5_ip_addr)
         else:
             self.logger.warn('LB config is not complet: %s, %s, %s',
-                              new_swg_config.lb_s11_ip_addr,
-                              new_swg_config.lb_s1_ip_addr,
-                              new_swg_config.lb_s5_ip_addr)
+                              new_sgw_config.lb_s11_ip_addr,
+                              new_sgw_config.lb_s1_ip_addr,
+                              new_sgw_config.lb_s5_ip_addr)
 
     def _del_iptables(self, ip):
         if ip is None:
