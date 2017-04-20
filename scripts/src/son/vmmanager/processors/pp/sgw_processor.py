@@ -94,9 +94,9 @@ class SGW_Config(utils.CommandConfig):
         if sgw_config.lb_s11_ip is not None:
           self.lb_s11_ip = sgw_config.lb_s11_ip
         if sgw_config.lb_s1_ip is not None:
-          self.lb_s1_ip = sgw_config.lb_s1_ip_addr
+          self.lb_s1_ip = sgw_config.lb_s1_ip
         if sgw_config.lb_s5_ip is not None:
-          self.lb_s5_ip = sgw_config.lb_s5_ip_addr
+          self.lb_s5_ip = sgw_config.lb_s5_ip
         if sgw_config.pgw_s5_ip_addr is not None:
           self.pgw_s5_ip_addr = sgw_config.pgw_s5_ip_addr
         if sgw_config.ds_ip is not None:
