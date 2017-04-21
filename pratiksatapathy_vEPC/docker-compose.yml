@@ -15,6 +15,30 @@ services:
     depends_on:
       - epc_deps
 
+  ransim_pp_1:
+    image: lb_pp:SNAPSHOT
+    container_name: ransim_pp_1
+    depends_on:
+      - epc_deps
+      - lb_pp
+    privileged: true
+
+  ransim_pp_2:
+    image: lb_pp:SNAPSHOT
+    container_name: ransim_pp_2
+    depends_on:
+      - epc_deps
+      - lb_pp
+    privileged: true
+
+  sink_pp:
+    image: lb_pp:SNAPSHOT
+    container_name: sink_pp
+    depends_on:
+      - epc_deps
+      - lb_pp
+    privileged: true
+
   mme_pp:
     build:
       context: .
