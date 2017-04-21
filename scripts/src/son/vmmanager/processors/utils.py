@@ -454,10 +454,10 @@ class Runner(object):
         self._task.stdout.close()
         self._task.stderr.close()
 
-        self._task = None
-
         self.logger.debug('Waiting standard IO threads to stop')
         self._stderr_thread.join()
         self._stdout_thread.join()
+
+        self._task = None
 
         return P.Result.ok('Task %s is finnished', self._executable)
