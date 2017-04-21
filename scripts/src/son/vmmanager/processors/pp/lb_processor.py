@@ -113,6 +113,7 @@ class LB_Processor(P):
                              append_log = True)
             r.setArguments(self.ADD_SERVICE % (ip, port))
             r.start()
+            r.join()
 
     def _addReplicas(self, lb_ip, lb_port, server_ips, server_ports, interface):
         if lb_ip is None or lb_port is None:
@@ -152,4 +153,5 @@ class LB_Processor(P):
             r.setArguments(self.ADD_REPLICA % (lb_ip, lb_port,
                                                server_ip, server_port))
         r.start()
+        r.join()
 
