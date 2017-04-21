@@ -4,9 +4,8 @@ WORKDIR /root/NFV_LTE_EPC/NFV_LTE_EPC-1.1/src
 RUN git pull
 RUN make
 
-WORKDIR /root
-RUN git clone https://github.com/elekjani/son-epc.git
-WORKDIR son-epc/scripts
+WORKDIR /root/son-epc/scripts
+RUN git pull
 RUN python3 setup.py install
 
 CMD /bin/bash
