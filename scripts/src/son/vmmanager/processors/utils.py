@@ -439,3 +439,25 @@ class Runner(object):
 
     def setArguments(self, arguments):
         self._arguments = arguments
+
+    def join(self):
+        self.logger.info('Joining task %s', self._executable)
+        if self._task is None:
+            return P.Result.warn('Unable to join task %s, it\'s not started',
+                                 self._executable)
+
+        self.logger.debug('Wait until task %s is finnished', self._executable)
+        self._task.wait()
+
+        self.logger.debug('Closing task\'s standard IOs')
+        self._task.stdin.close()
+        self._task.stdout.close()
+        self._task.stderr.close()
+
+        self._task = None
+
+        self.logger.debug('Waiting standard IO threads to stop')
+        self._stderr_thread.join()
+        self._stdout_thread.join()
+
+        return P.Result.ok('Task %s is finnished', self._executable)

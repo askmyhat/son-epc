@@ -190,6 +190,7 @@ class SGW_Processor(P):
                           log_dir=self._iptables_log_dir_name,
                           append_log = True)
         r.start()
+        r.join()
 
     def _add_iptables(self, ip):
         if ip is None:
@@ -199,6 +200,7 @@ class SGW_Processor(P):
                           log_dir=self._iptables_log_dir_name,
                           append_log = True)
         r.start()
+        r.join()
 
     def _setArguments(self):
         nvalid = self._sgw_config.s11_threads_count is None
