@@ -7,6 +7,10 @@ RUN python3 setup.py install
 COPY hss.conf /root/son-epc/scripts/server.conf
 COPY hss.sh /root/son-epc/scripts/start.sh
 
+RUN cp /root/openair-cn/ETC/hss.conf /usr/local/etc/oai
+RUN cp /root/openair-cn/ETC/hss_fd.conf /usr/local/etc/oai/freeDiameter
+RUN cp /root/openair-cn/ETC/acl.conf /usr/local/etc/oai/freeDiameter
+
 ENV SON_EMU_CMD "/root/son-epc/scripts/start.sh"
 
 CMD /bin/bash

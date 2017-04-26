@@ -37,3 +37,4 @@ services:
     command: /root/son-epc/scripts/start.sh
     networks:
       - oai_net
+    privileged: true
