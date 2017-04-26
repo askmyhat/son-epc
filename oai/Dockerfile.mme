@@ -1,15 +1,13 @@
-FROM mme
-WORKDIR /root/son-vm
+FROM oai_base
+
+WORKDIR /root/son-epc/scripts
 RUN git pull
 RUN python3 setup.py install
-COPY mme.conf /root/son-vm/server.conf
-COPY mme.sh /root/son-vm/start.sh
 
-RUN	apt-get update && apt-get install -y \
-	net-tools \
-	iproute \
-	iputils-ping
+COPY mme.conf /root/son-epc/scripts/server.conf
+COPY mme.sh /root/son-epc/scripts/start.sh
 
-ENV SON_EMU_CMD "/root/son-vm/start.sh"
+ENV SON_EMU_CMD "/root/son-epc/scripts/start.sh"
 
 CMD /bin/bash
+

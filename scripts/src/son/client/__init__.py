@@ -220,44 +220,36 @@ class Client(object):
         reactor.run()
 
 
-def parseConfigArgs(argv):
-    configArguments = argparse.ArgumentParser()
-    configArguments.add_argument('--hss_mgmt', required=True,
-                                 help='Management address for HSS')
-    configArguments.add_argument('--hss_data', required=True,
-                                 help='Data plane address for HSS')
-    configArguments.add_argument('--mme_mgmt', required=True,
-                                 help='Management address for MME')
-    configArguments.add_argument('--mme_data', required=True,
-                                 help='Data plane address for MME')
-    configArguments.add_argument('--spgw_mgmt', required=True,
-                                 help='Management address for SPGW')
-    configArguments.add_argument('--spgw_data', required=True,
-                                 help='Data plane address for SPGW')
-    return configArguments.parse_args(argv)
-
-def parseOAIScenarioSpecific(argv):
-    parser = argparse.ArgumentParser()
+def createOAISpecificArgs(parser):
     parser.add_argument('--hss_host', required=True,
                         help='Hostname for HSS')
     parser.add_argument('--spgw_host', required=True,
                         help='Hostname for SPGW')
     parser.add_argument('--mme_host', required=True,
                         help='Hostname for MME')
-    return parser.parse_known_args(argv)
+    parser.add_argument('--spgw_mgmt', required=True,
+                        help='Management address for SPGW')
+    parser.add_argument('--spgw_s1', required=True,
+                        help='Data plane address for SPGW')
+    parser.set_defaults(func=OAIClient)
 
-def parseNetworkArgs(argv):
-    parser = argparse.ArgumentParser()
+def createNetworkArgs(parser):
+    parser.add_argument('--hss_mgmt', required=True,
+                        help='Management address for HSS')
+    parser.add_argument('--hss_s6a', required=True,
+                        help='Data plane address for HSS')
+    parser.add_argument('--mme_mgmt', required=True,
+                        help='Management address for MME')
+    parser.add_argument('--mme_s1', required=True,
+                        help='Data plane address for MME')
     parser.add_argument('--mme_s1_ip', required=True,
-                                 help='Public IP of MME')
-    parser.add_argument('--spgw_s1_ip', required=True,
-                                 help='Public IP of SPGW')
-    parser.add_argument('--spgw_sgi_ip', required=True,
-                                 help='External IP of SPGW')
-    return parser.parse_known_args(argv)
+                        help='Public IP of MME')
+    parser.add_argument('--sgw_s1_ip', required=True,
+                        help='Public IP of SGW')
+    parser.add_argument('--pgw_sgi_ip', required=True,
+                        help='External IP of PGW')
 
-def parsePPScenarioSpecific(argv):
-    parser = argparse.ArgumentParser()
+def createPPSpecific(parser):
     parser.add_argument('--sgw_s5_ip', required=True,
                         help='S5 IP of SGW')
     parser.add_argument('--pgw_s5_ip', required=True,
@@ -266,6 +258,10 @@ def parsePPScenarioSpecific(argv):
                         help='IP of traffic monitor')
     parser.add_argument('--sink_ip', required=True,
                         help='IP of sink')
+    parser.add_argument('--sgw_mgmt', required=True,
+                        help='Management address for SPGW')
+    parser.add_argument('--sgw_s1', required=True,
+                        help='Data plane address for SPGW')
     parser.add_argument('--pgw_mgmt', required=True,
                         help='Management IP of PGW')
     parser.add_argument('--ds_ip', required=True,
@@ -285,81 +281,68 @@ def parsePPScenarioSpecific(argv):
                         help='IP of the load balancer for SGW-S5')
     parser.add_argument('--lb_s5_port', required=False, default=7200,
                         help='Port of the load balancer for SGW-S5')
-    return parser.parse_known_args(argv)
+    parser.set_defaults(func=PPClient)
 
-def parseGeneralArgs(argv):
+def createGeneralParser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--verbose','-v', action='store_true', dest='verbose',
                         default=False, help='Verbose')
     parser.add_argument('--stop','-s', action='store_true', dest='stop',
-                        default=False, help='Verbose')
-    parser.add_argument('--oai', action='store_true', dest='oai',
-                        default=False, help='OpenAirInterface')
-    parser.add_argument('--pp', action='store_true', dest='pp',
-                        default=False, help='Pratik Satapathy')
-    return parser.parse_known_args(argv)
+                        default=False, help='Stop vEPC')
+    return parser
+
+def OAIClient(args):
+    client = Client(hss=Hss(args.hss_mgmt, args.hss_data, None),
+                    mme=Mme(args.mme_mgmt, args.mme_data,
+                            args.mme_s1_ip, None, None),
+                    sgw=Sgw(args.spgw_mgmt, args.spgw_data,
+                            args.sgw_s1_ip, None, None, None, None),
+                    pgw=Pgw(None, None, args.pgw_sgi_ip,
+                            None, None, None),
+                    hosts=HostNames(args.hss_host, args.mme_host,
+                                    args.spgw_host),
+                    ds=None,
+                    lb=None)
+    return client
+
+def PPClient(args):
+    client = Client(hss=Hss(args.hss_mgmt, args.hss_data, '2'),
+                    mme=Mme(args.mme_mgmt, args.mme_data,
+                            args.mme_s1_ip, '2', args.trafmon_ip),
+                    sgw=Sgw(args.spgw_mgmt, args.spgw_data,
+                            args.sgw_s1_ip, args.sgw_s5_ip,
+                            '2', '2', '2'),
+                    pgw=Pgw(args.pgw_mgmt, args.pgw_s5_ip,
+                            args.pgw_sgi_ip, args.sink_ip,
+                            '2', '2'),
+                    ds=Ds(args.ds_ip),
+                    lb=Lb(args.lb_mgmt, args.lb_s11_ip,
+                          args.lb_s1_ip, args.lb_s5_ip,
+                          args.lb_s11_port, args.lb_s1_port,
+                          args.lb_s5_port),
+                    hosts=None,
+                    isPp=True)
+    return client
 
 
-def main(argv = sys.argv[1:]):
-    generalArgs, remaining_argv = parseGeneralArgs(argv)
-    networkArgs, remaining_argv = parseNetworkArgs(remaining_argv)
+def main(argv=sys.argv[1:]):
+    general_parser = createGeneralParser()
+    createNetworkArgs(general_parser)
 
-    if generalArgs.verbose:
+    sub_parsers = general_parser.add_subparsers()
+    createOAISpecificArgs(sub_parsers.add_parser('oai'))
+    createPPSpecific(sub_parsers.add_parser('pp'))
+
+    parsed_args = general_parser.parse_args(argv)
+
+    if parsed_args.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
 
+    client = parsed_args.func(parsed_args)
 
-    if generalArgs.pp:
-        scenarioArgs, remaining_argv = parsePPScenarioSpecific(remaining_argv)
-    elif generalArgs.oai:
-        hostArgs, remaining_argv = parseOAIScenarioSpecific(remaining_argv)
-    else:
-        logger.error('--oai or --pp must be specified to select EPC implementation')
-        return
-
-    configArgs = parseConfigArgs(remaining_argv)
-
-    logger.info('Got cli parameters:')
-    configDict = vars(configArgs)
-    for param in configDict:
-        logger.info('%s -> %s', param, configDict[param])
-
-    if generalArgs.oai:
-        client = Client(
-            hss=Hss(configArgs.hss_mgmt, configArgs.hss_data, None),
-            mme=Mme(configArgs.mme_mgmt, configArgs.mme_data,
-                    networkArgs.mme_s1_ip, None, None),
-            sgw=Sgw(configArgs.spgw_mgmt, configArgs.spgw_data,
-                    networkArgs.spgw_s1_ip, None, None, None, None),
-            pgw=Pgw(None, None, networkArgs.spgw_sgi_ip,
-                    None, None, None),
-            hosts=HostNames(hostArgs.hss_host, hostArgs.mme_host,
-                            hostArgs.spgw_host),
-            ds=None,
-            lb=None)
-    elif generalArgs.pp:
-        client = Client(
-            hss=Hss(configArgs.hss_mgmt, configArgs.hss_data, '2'),
-            mme=Mme(configArgs.mme_mgmt, configArgs.mme_data,
-                    networkArgs.mme_s1_ip, '2', scenarioArgs.trafmon_ip),
-            sgw=Sgw(configArgs.spgw_mgmt, configArgs.spgw_data,
-                    networkArgs.spgw_s1_ip, scenarioArgs.sgw_s5_ip,
-                    '2', '2', '2'),
-            pgw=Pgw(scenarioArgs.pgw_mgmt, scenarioArgs.pgw_s5_ip,
-                    networkArgs.spgw_sgi_ip, scenarioArgs.sink_ip,
-                    '2', '2'),
-            ds=Ds(scenarioArgs.ds_ip),
-            lb=Lb(scenarioArgs.lb_mgmt, scenarioArgs.lb_s11_ip,
-                  scenarioArgs.lb_s1_ip, scenarioArgs.lb_s5_ip,
-                  scenarioArgs.lb_s11_port, scenarioArgs.lb_s1_port,
-                  scenarioArgs.lb_s5_port),
-            hosts=None,
-            isPp=generalArgs.pp)
-
-
-    if generalArgs.stop:
+    if parsed_args.stop:
         client.stop()
     else:
         client.start()

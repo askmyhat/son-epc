@@ -1,8 +1,7 @@
 version: '3'
 
 networks:
-  sonepc_default:
-    external: true
+  oai_net:
 
 services:
   mme:
@@ -11,9 +10,9 @@ services:
       dockerfile: Dockerfile.mme
     image: mme:SNAPSHOT
     container_name: mme
-    command: /root/son-vm/start.sh
+    command: /root/son-epc/scripts/start.sh
     networks:
-      - sonepc_default
+      - oai_net
 
   hss:
     build:
@@ -21,9 +20,9 @@ services:
       dockerfile: Dockerfile.hss
     image: hss:SNAPSHOT
     container_name: hss
-    command: /root/son-vm/start.sh
+    command: /root/son-epc/scripts/start.sh
     networks:
-      - sonepc_default
+      - oai_net
 
   spgw:
     build:
@@ -35,6 +34,6 @@ services:
       - NET_ADMIN
       - NET_RAW
       - SYS_MODULE
-    command: /root/son-vm/start.sh
+    command: /root/son-epc/scripts/start.sh
     networks:
-      - sonepc_default
+      - oai_net
