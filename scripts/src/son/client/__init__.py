@@ -227,20 +227,20 @@ def createOAISpecificArgs(parser):
                         help='Hostname for SPGW')
     parser.add_argument('--mme_host', required=True,
                         help='Hostname for MME')
-    parser.add_argument('--spgw_mgmt', required=True,
+    parser.add_argument('--spgw_mgmt_ip', required=True,
                         help='Management address for SPGW')
-    parser.add_argument('--spgw_s1', required=True,
+    parser.add_argument('--spgw_s11_ip', required=True,
                         help='Data plane address for SPGW')
     parser.set_defaults(func=OAIClient)
 
 def createNetworkArgs(parser):
-    parser.add_argument('--hss_mgmt', required=True,
+    parser.add_argument('--hss_mgmt_ip', required=True,
                         help='Management address for HSS')
-    parser.add_argument('--hss_s6a', required=True,
+    parser.add_argument('--hss_s6a_ip', required=True,
                         help='Data plane address for HSS')
-    parser.add_argument('--mme_mgmt', required=True,
+    parser.add_argument('--mme_mgmt_ip', required=True,
                         help='Management address for MME')
-    parser.add_argument('--mme_s1', required=True,
+    parser.add_argument('--mme_s11_ip', required=True,
                         help='Data plane address for MME')
     parser.add_argument('--mme_s1_ip', required=True,
                         help='Public IP of MME')
@@ -258,16 +258,16 @@ def createPPSpecific(parser):
                         help='IP of traffic monitor')
     parser.add_argument('--sink_ip', required=True,
                         help='IP of sink')
-    parser.add_argument('--sgw_mgmt', required=True,
+    parser.add_argument('--sgw_mgmt_ip', required=True,
                         help='Management address for SPGW')
-    parser.add_argument('--sgw_s1', required=True,
+    parser.add_argument('--sgw_s11_ip', required=True,
                         help='Data plane address for SPGW')
-    parser.add_argument('--pgw_mgmt', required=True,
+    parser.add_argument('--pgw_mgmt_ip', required=True,
                         help='Management IP of PGW')
     parser.add_argument('--ds_ip', required=True,
                         help='IP of the common datastore')
 
-    parser.add_argument('--lb_mgmt', required=True,
+    parser.add_argument('--lb_mgmt_ip', required=True,
                         help='IP of the load balancer')
     parser.add_argument('--lb_s11_ip', required=True,
                         help='IP of the load balancer for SGW-S11')
@@ -292,10 +292,10 @@ def createGeneralParser():
     return parser
 
 def OAIClient(args):
-    client = Client(hss=Hss(args.hss_mgmt, args.hss_data, None),
-                    mme=Mme(args.mme_mgmt, args.mme_data,
+    client = Client(hss=Hss(args.hss_mgmt_ip, args.hss_s6a_ip, None),
+                    mme=Mme(args.mme_mgmt_ip, args.mme_s11_ip,
                             args.mme_s1_ip, None, None),
-                    sgw=Sgw(args.spgw_mgmt, args.spgw_data,
+                    sgw=Sgw(args.spgw_mgmt_ip, args.spgw_s11_ip,
                             args.sgw_s1_ip, None, None, None, None),
                     pgw=Pgw(None, None, args.pgw_sgi_ip,
                             None, None, None),
@@ -306,13 +306,13 @@ def OAIClient(args):
     return client
 
 def PPClient(args):
-    client = Client(hss=Hss(args.hss_mgmt, args.hss_data, '2'),
-                    mme=Mme(args.mme_mgmt, args.mme_data,
+    client = Client(hss=Hss(args.hss_mgmt_ip, args.hss_s6a_ip, '2'),
+                    mme=Mme(args.mme_mgmt_ip, args.mme_s11_ip,
                             args.mme_s1_ip, '2', args.trafmon_ip),
-                    sgw=Sgw(args.spgw_mgmt, args.spgw_data,
+                    sgw=Sgw(args.sgw_mgmt_ip, args.sgw_s11_ip,
                             args.sgw_s1_ip, args.sgw_s5_ip,
                             '2', '2', '2'),
-                    pgw=Pgw(args.pgw_mgmt, args.pgw_s5_ip,
+                    pgw=Pgw(args.pgw_mgmt_ip, args.pgw_s5_ip,
                             args.pgw_sgi_ip, args.sink_ip,
                             '2', '2'),
                     ds=Ds(args.ds_ip),
