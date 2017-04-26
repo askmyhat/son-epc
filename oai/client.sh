@@ -27,5 +27,4 @@ args+=" --sgw_s1_ip $spgw_data --pgw_sgi_ip $spgw_data"
 
 spec_args="--hss_host $hss_host --mme_host $mme_host --spgw_host $spgw_host"
 spec_args+=" --spgw_mgmt_ip $spgw_mgmt --spgw_s11_ip $spgw_data"
-set -x
 son-vm-client $args $@ oai $spec_args
