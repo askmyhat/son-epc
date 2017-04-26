@@ -1,0 +1,33 @@
+FROM ubuntu
+
+COPY assume-yes /etc/apt/apt.conf.d/assume-yes
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update
+RUN apt-get install mc vim git linux-image-extra-`uname -r` tcpdump iputils-ping lsb-release kmod sudo iptables net-tools wget libpython3-dev python3 make software-properties-common
+
+RUN echo 'mysql-server mysql-server/root_password password hurka' | debconf-set-selections
+RUN echo 'mysql-server mysql-server/root_password_again password hurka' | debconf-set-selections
+RUN echo 'wireshark-common wireshark-common/install-setuid boolean true' | debconf-set-selections
+
+WORKDIR /root
+RUN git clone https://gitlab.eurecom.fr/oai/openair-cn
+
+WORKDIR /root/openair-cn
+RUN ./SCRIPTS/build_hss -i -F
+RUN ./SCRIPTS/build_mme -i -f
+RUN ./SCRIPTS/build_spgw -i -f
+
+RUN ./SCRIPTS/build_hss
+RUN ./SCRIPTS/build_mme
+RUN ./SCRIPTS/build_spgw
+
+WORKDIR /root
+RUN wget https://bootstrap.pypa.io/get-pip.py
+RUN python3 get-pip.py
+
+WORKDIR /root
+RUN git clone https://github.com/elekjani/son-epc.git
+WORKDIR /root/son-epc/scripts
+RUN python3 setup.py install
+
+CMD /bin/bash
