@@ -11,7 +11,6 @@ RUN cp /root/openair-cn/ETC/mme.conf /usr/local/etc/oai
 RUN cp /root/openair-cn/ETC/mme_fd.conf /usr/local/etc/oai/freeDiameter
 RUN cp /root/openair-cn/ETC/acl.conf /usr/local/etc/oai/freeDiameter
 
-ENV SON_EMU_CMD "/root/son-epc/scripts/start.sh"
+ENV SON_EMU_CMD "son-vm-server -v -c /root/son-epc/oai/mme.conf"
 
-CMD /bin/bash
-
+CMD son-vm-server -v -c /root/son-epc/oai/mme.conf

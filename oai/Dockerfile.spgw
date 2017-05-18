@@ -11,6 +11,6 @@ RUN cp /root/openair-cn/ETC/spgw.conf /usr/local/etc/oai
 RUN cp /root/openair-cn/ETC/acl.conf /usr/local/etc/oai/freeDiameter
 RUN sed -i -r 's/(TRAFFIC_SHAPPING_ENABLED\s*=\s*")yes(";.*$)/\1no\2/' /usr/local/etc/oai/spgw.conf
 
-ENV SON_EMU_CMD "/root/son-epc/scripts/start.sh"
+ENV SON_EMU_CMD "son-vm-server -v -c /root/son-epc/oai/spgw.conf"
 
-CMD /bin/bash
+CMD son-vm-server -v -c /root/son-epc/oai/spgw.conf

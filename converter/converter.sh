@@ -45,7 +45,45 @@ flavor_name="ds1G"
 network_name="private"
 build_package="build.tar.gz"
 snapshot_name="Snapshot"
+do_not_install_docker=0
+while getopts ":i:f:n:b:s:dh" args; do
+  case $args in
+    i)
+      image_name=$OPTARG
+      ;;
+    f)
+      flavor_name=$OPTARG
+      ;;
+    n)
+      network_name=$OPTARG
+      ;;
+    b)
+      build_package=$OPTARG
+      ;;
+    s)
+      snapshot_name=$OPTARG
+      ;;
+    d)
+      do_not_install_docker=1
+      ;;
+    h)
+      echo "Converter.sh -- Create OpenStack snapshot based on a build package"
+      echo "\t-i name\t\tOpenStack base image (default: Ubuntu)"
+      echo "\t-f name\t\tOpenStack flavor name (default: ds1G)"
+      echo "\t-n name\t\tOpenStack network name (default: private)"
+      echo "\t-b package\t\tBuild package (default: build.tar.gz)"
+      echo "\t-s name\t\tSnapshot name (default: Snapshot)"
+      echo "\t-d\t\tDisable docker installation"
+      exit 0
+      ;;
+  esac
+done
 [[ -f $build_package ]] || die "Build script \"$build_package\" does not exist"
+
+echo "Using build package $build_package"
+echo "Using flavor $flavor_name, image $image_name, network $network_name"
+echo "Snapshot will be saved with name $snapshot_name"
+[[ $(openstack image show $snapshot_name 2>/dev/null) ]] && die "Image with name $snapshot_name already exists. Please specify a unique snapshot name"
 
 ssh_config=""
 key_name=""
@@ -53,9 +91,9 @@ private_key=""
 secgroup_name=""
 instance_name=""
 floating_ip=""
-image_id=`openstack image list -f value | awk '$2=="'$image_name'"{print $1}'`
-flavor_id=`openstack flavor list -f value| awk '$2=="'$flavor_name'"{print $1}'`
-network_id=`openstack network list -f value | awk '$2=="'$network_name'"{print $1}'`
+image_id=`openstack image show $image_name -f value -c id 2>/dev/null`
+flavor_id=`openstack flavor show $flavor_name -f value -c id 2>/dev/null`
+network_id=`openstack network show $network_name -f value -c id 2>/dev/null`
 [[ -n $flavor_id ]] || die "No flavor ID is found for name $flavor_name"
 [[ -n $image_id ]] || die "No image ID is found for name $image_name"
 [[ -n $network_id ]] || die "No network ID is found for name $network_name"
@@ -143,7 +181,7 @@ function waitUntilActive() {
   while [[ $instance_status != "ACTIVE" ]]; do
     echo -n "."
     sleep 1
-    instance_status=`openstack server show $instance_name | tr -d '|' | awk '$1=="status"{print $2}'`
+    instance_status=`openstack server show $instance_name -f value -c status`
   done
   echo "OK"
 }
@@ -222,7 +260,7 @@ function stopInstance() {
   while [[ $instance_status != "SHUTOFF" ]]; do
     echo -n "."
     sleep 1
-    instance_status=`openstack server show $instance_name | tr -d '|' | awk '$1=="status"{print $2}'`
+    instance_status=`openstack server show $instance_name -f value -c status`
   done
   echo "OK"
 }
@@ -231,11 +269,11 @@ function createSnapshot() {
   echo "Creating snapshot from $instance_name"
   openstack server image create $instance_name --name $snapshot_name
   echo -n "Waiting until snapshot ($snapshot_name) is ready"
-  local image_status=`openstack image list -f value | awk '$2=="'$snapshot_name'"{print $3}'`
+  local image_status=`openstack image show $snapshot_name -f value -c status`
   while [[ $image_status != "active" ]]; do
     echo -n "."
     sleep 1
-    image_status=`openstack image list -f value | awk '$2=="'$snapshot_name'"{print $3}'`
+    image_status=`openstack image show $snapshot_name -f value -c status`
   done
   echo "OK"
 }
@@ -248,7 +286,7 @@ addFloatingIP
 waitUntilSshAlive
 createSshConfig
 
-installDocker
+[[ $do_not_install_docker == 1 ]] || installDocker
 buildImages
 
 stopInstance
