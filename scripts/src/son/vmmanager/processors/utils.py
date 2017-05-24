@@ -30,9 +30,12 @@ class ConfiguratorHelpers(object):
             f.write(content)
 
         backup_path = '%s.%s.back' % (file_path, int(time.time()))
-        shutil.copy(file_path, backup_path)
-        shutil.copy(tmp_file, file_path)
-        shutil.copymode(backup_path, file_path)
+        if os.path.isfie(file_path):
+            shutil.copy(file_path, backup_path)
+            shutil.copy(tmp_file, file_path)
+            shutil.copymode(backup_path, file_path)
+        else:
+            shutil.copy(tmp_file, file_path)
 
         os.remove(tmp_file)
 
