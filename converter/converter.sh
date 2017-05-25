@@ -68,12 +68,12 @@ while getopts ":i:f:n:b:s:dh" args; do
       ;;
     h)
       echo "Converter.sh -- Create OpenStack snapshot based on a build package"
-      echo "\t-i name\t\tOpenStack base image (default: Ubuntu)"
-      echo "\t-f name\t\tOpenStack flavor name (default: ds1G)"
-      echo "\t-n name\t\tOpenStack network name (default: private)"
-      echo "\t-b package\t\tBuild package (default: build.tar.gz)"
-      echo "\t-s name\t\tSnapshot name (default: Snapshot)"
-      echo "\t-d\t\tDisable docker installation"
+      echo -e "\t-i name\t\tOpenStack base image (default: Ubuntu)"
+      echo -e "\t-f name\t\tOpenStack flavor name (default: ds1G)"
+      echo -e "\t-n name\t\tOpenStack network name (default: private)"
+      echo -e "\t-b package\tBuild package (default: build.tar.gz)"
+      echo -e "\t-s name\t\tSnapshot name (default: Snapshot)"
+      echo -e "\t-d\t\tDisable docker installation"
       exit 0
       ;;
   esac
