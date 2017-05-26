@@ -173,6 +173,16 @@ function createInstance() {
 function deleteInstance() {
   echo "Deleting converter instance $instance_name"
   openstack server delete $instance_name
+  openstack server show $instance_name 1>/dev/null 2>&1
+  local instance_exists=$?
+  while [[ $instance_exists != 1 ]]; do
+    echo -n "."
+    sleep 1
+    openstack server show $instance_name 1>/dev/null 2>&1
+    instance_exists=$?
+  done
+  echo "OK"
+
 }
 
 function waitUntilActive() {
@@ -247,8 +257,8 @@ function installDocker() {
 
 function buildImages() {
   c_ssh converter mkdir build_dir
-  c_scp $build_package converter:$build_package
-  c_ssh converter tar -C build_dir -xzf $build_package
+  c_scp $build_package converter:build.tar.gz
+  c_ssh converter tar -C build_dir -xzf build.tar.gz
   c_ssh converter bash ./build_dir/build.sh
 }
 
