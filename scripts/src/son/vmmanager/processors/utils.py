@@ -30,7 +30,7 @@ class ConfiguratorHelpers(object):
             f.write(content)
 
         backup_path = '%s.%s.back' % (file_path, int(time.time()))
-        if os.path.isfie(file_path):
+        if os.path.isfile(file_path):
             shutil.copy(file_path, backup_path)
             shutil.copy(tmp_file, file_path)
             shutil.copymode(backup_path, file_path)
@@ -42,6 +42,9 @@ class ConfiguratorHelpers(object):
     def sed_it(self, regex, sub):
         self._current_line =  re.sub(regex, r'\1"%s"' % sub, self._current_line)
         return self._current_line
+
+    def match_it(self, regex):
+        return re.match(regex, self._current_line) is not None
 
     def ip(self, masked_ip):
         return masked_ip.split('/')[0] if masked_ip is not None else None

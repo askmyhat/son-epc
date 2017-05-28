@@ -49,11 +49,15 @@ class MME_Configurator(utils.ConfiguratorHelpers):
     RE_S11_IPV4 = RE_ASSIGNMENT('MME_IPV4_ADDRESS_FOR_S11_MME', RE_IPV4_MASK)
     RE_SGW_IPV4 = RE_ASSIGNMENT('SGW_IPV4_ADDRESS_FOR_S11', RE_IPV4_MASK)
     RE_HSS_HOSTNAME = RE_ASSIGNMENT('HSS_HOSTNAME', RE_NAME)
+    RE_IP_CAPABILITY = RE_ASSIGNMENT('IP_CAPABILITY', RE_NAME)
+    RE_PID_DIRECTORY = RE_ASSIGNMENT('PID_DIRECTORY', RE_NAME)
 
     RE_IDENTITY = RE_ASSIGNMENT('^Identity', RE_NAME)
     RE_CONNECT_PEER = RE_ASSIGNMENT('^ConnectPeer', RE_NAME)
     RE_CONNECT_TO = RE_ASSIGNMENT('ConnectTo', RE_IPV4)
     RE_REALM = RE_ASSIGNMENT('[Rr]ealm', RE_NAME)
+
+    PID_DIRECTORY = 'PID_DIRECTORY = "/var/run";\n'
 
     def __init__(self, config_path, fd_config_path, host_file_path,
                  cert_exe = None, cert_path = None):
@@ -167,6 +171,12 @@ class MME_Configurator(utils.ConfiguratorHelpers):
 
                 if hss_host is not None:
                     self.sed_it(self.RE_HSS_HOSTNAME, hss_host)
+
+                if self.match_it(self.RE_PID_DIRECTORY):
+                    continue
+
+                if self.match_it(self.RE_IP_CAPABILITY):
+                    new_content += self.PID_DIRECTORY
 
                 new_content += self._current_line
 
