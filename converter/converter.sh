@@ -98,6 +98,7 @@ instance_name=""
 floating_ip=""
 #public_gateway_ip=`openstack subnet show public-subnet -f value -c gateway_ip` #only OS's admin can query this
 public_gateway_ip="172.27.4.1"
+registry_port=""
 image_id=`openstack image show $image_name -f value -c id 2>/dev/null`
 flavor_id=`openstack flavor show $flavor_name -f value -c id 2>/dev/null`
 network_id=`openstack network show $network_name -f value -c id 2>/dev/null`
@@ -256,35 +257,41 @@ function c_scp() {
 }
 
 function c_xargs() {
+  args=$1
+  shift
   xargs -d',' -I'{}' $@
 }
 
 function installDocker() {
   c_scp install_docker.sh converter:install_docker.sh
-  c_ssh converter ./install_docker.sh
+  if [[ -n $images_to_push ]]; then
+    c_ssh converter ./install_docker.sh $public_gateway_ip:$registry_port
+  else
+    c_ssh converter ./install_docker.sh
+  fi
   c_scp docker-container@.service converter:/tmp/docker-container@.service
   c_ssh converter sudo mv /tmp/docker-container@.service /etc/systemd/system/docker-container@.service
 }
 
 function startRegistry() {
-  local registryPort=15000
-  local a_registryPort=$((registryPort+1))
-  echo -n "Starting docker registry $registryPort..."
+  registry_port=15000 #TODO: randomize port, container name
+  local a_registryPort=$((registry_port+1))
+  echo -n "Starting docker registry $registry_port..."
   sudo docker run -d -p $a_registryPort:5000 --name registry registry:2
-  echo -n $images_to_push | c_xargs docker tag {} localhost:$a_registryPort/{}
-  echo -n $images_to_push | c_xargs docker push localhost:$a_registryPort/{}
+  c_xargs $images_to_push docker tag {} localhost:$a_registryPort/{}
+  c_xargs $images_to_push docker push localhost:$a_registryPort/{}
 
   #docker fix...
   #docker's iptables rules conflicts with the OpenStack rules
-  #  -> port forward a local port (registryPort) to the actual registry (registryPort + 1)
-  iptables -A PREROUTING -t nat -i br-ex -p tcp --dport $registryPort -j DNAT --to $public_gateway_ip:$a_registryPort
+  #  -> port forward a local port (registry_port) to the actual registry (registry_port + 1)
+  iptables -A PREROUTING -t nat -i br-ex -p tcp --dport $registry_port -j DNAT --to $public_gateway_ip:$a_registryPort
   echo "Done"
 }
 
 function stopRegistry() {
   echo -n "Stopping docker registry..."
   sudo docker rm -f registry
-  iptables -D PREROUTING -t nat -i br-ex -p tcp --dport $registryPort -j DNAT --to $public_gateway_ip:$a_registryPort
+  iptables -D PREROUTING -t nat -i br-ex -p tcp --dport $registry_port -j DNAT --to $public_gateway_ip:$a_registryPort
   echo "Done"
 }
 
@@ -292,7 +299,7 @@ function buildImages() {
   c_ssh converter mkdir build_dir
   c_scp $build_package converter:build.tar.gz
   c_ssh converter tar -C build_dir -xzf build.tar.gz
-  c_ssh converter bash ./build_dir/build.sh $public_gateway_ip
+  c_ssh converter bash ./build_dir/build.sh $public_gateway_ip:$registry_port $images_to_push
 }
 
 function stopInstance() {
@@ -329,8 +336,8 @@ addFloatingIP
 waitUntilSshAlive
 createSshConfig
 
-[[ $do_not_install_docker == 1 ]] || installDocker
 [[ -z $images_to_push ]] || startRegistry
+[[ $do_not_install_docker == 1 ]] || installDocker
 buildImages
 [[ -z $images_to_push ]] || stopRegistry
 
