@@ -1,5 +1,7 @@
 FROM oai_base
 
+RUN sed -r -i "s/(bind-address[ \t]*=[ \t]*).*/\10.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf
+
 WORKDIR /root/son-epc/scripts
 RUN git pull
 RUN python3 setup.py install
@@ -10,6 +12,9 @@ COPY hss.sh /root/son-epc/scripts/start.sh
 RUN cp /root/openair-cn/ETC/hss.conf /usr/local/etc/oai
 RUN cp /root/openair-cn/ETC/hss_fd.conf /usr/local/etc/oai/freeDiameter
 RUN cp /root/openair-cn/ETC/acl.conf /usr/local/etc/oai/freeDiameter
+
+RUN /root/openair-cn/SCRIPTS/hss_db_create localhost root hurka root hurka oai_db
+RUN /root/openair-cn/SCRIPTS/hss_db_import localhost root hurka oai_db /root/openair-cn/SRC/OAI_HSS/db/oai_db.sql
 
 ENV SON_EMU_CMD "son-vm-server -v -c /root/son-epc/oai/hss.conf"
 
