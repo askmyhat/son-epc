@@ -46,6 +46,7 @@ network_name="private"
 build_package="build.tar.gz"
 snapshot_name="Snapshot"
 do_not_install_docker=0
+images_to_push=""
 while getopts ":i:f:n:b:s:dh" args; do
   case $args in
     i)
@@ -66,6 +67,9 @@ while getopts ":i:f:n:b:s:dh" args; do
     d)
       do_not_install_docker=1
       ;;
+    r)
+      images_to_push=$OPTARG
+      ;;
     h)
       echo "Converter.sh -- Create OpenStack snapshot based on a build package"
       echo -e "\t-i name\t\tOpenStack base image (default: Ubuntu)"
@@ -74,6 +78,7 @@ while getopts ":i:f:n:b:s:dh" args; do
       echo -e "\t-b package\tBuild package (default: build.tar.gz)"
       echo -e "\t-s name\t\tSnapshot name (default: Snapshot)"
       echo -e "\t-d\t\tDisable docker installation"
+      echo -e "\t-r images\tStart local docker registry and push images (comma separted list) to it"
       exit 0
       ;;
   esac
@@ -91,6 +96,8 @@ private_key=""
 secgroup_name=""
 instance_name=""
 floating_ip=""
+#public_gateway_ip=`openstack subnet show public-subnet -f value -c gateway_ip` #only OS's admin can query this
+public_gateway_ip="172.27.4.1"
 image_id=`openstack image show $image_name -f value -c id 2>/dev/null`
 flavor_id=`openstack flavor show $flavor_name -f value -c id 2>/dev/null`
 network_id=`openstack network show $network_name -f value -c id 2>/dev/null`
@@ -248,6 +255,10 @@ function c_scp() {
   scp -q -F $ssh_config $@
 }
 
+function c_xargs() {
+  xargs -d',' -I'{}' $@
+}
+
 function installDocker() {
   c_scp install_docker.sh converter:install_docker.sh
   c_ssh converter ./install_docker.sh
@@ -255,11 +266,33 @@ function installDocker() {
   c_ssh converter sudo mv /tmp/docker-container@.service /etc/systemd/system/docker-container@.service
 }
 
+function startRegistry() {
+  local registryPort=15000
+  local a_registryPort=$((registryPort+1))
+  echo -n "Starting docker registry $registryPort..."
+  sudo docker run -d -p $a_registryPort:5000 --name registry registry:2
+  echo -n $images_to_push | c_xargs docker tag {} localhost:$a_registryPort/{}
+  echo -n $images_to_push | c_xargs docker push localhost:$a_registryPort/{}
+
+  #docker fix...
+  #docker's iptables rules conflicts with the OpenStack rules
+  #  -> port forward a local port (registryPort) to the actual registry (registryPort + 1)
+  iptables -A PREROUTING -t nat -i br-ex -p tcp --dport $registryPort -j DNAT --to $public_gateway_ip:$a_registryPort
+  echo "Done"
+}
+
+function stopRegistry() {
+  echo -n "Stopping docker registry..."
+  sudo docker rm -f registry
+  iptables -D PREROUTING -t nat -i br-ex -p tcp --dport $registryPort -j DNAT --to $public_gateway_ip:$a_registryPort
+  echo "Done"
+}
+
 function buildImages() {
   c_ssh converter mkdir build_dir
   c_scp $build_package converter:build.tar.gz
   c_ssh converter tar -C build_dir -xzf build.tar.gz
-  c_ssh converter bash ./build_dir/build.sh
+  c_ssh converter bash ./build_dir/build.sh $public_gateway_ip
 }
 
 function stopInstance() {
@@ -297,7 +330,9 @@ waitUntilSshAlive
 createSshConfig
 
 [[ $do_not_install_docker == 1 ]] || installDocker
+[[ -z $images_to_push ]] || startRegistry
 buildImages
+[[ -z $images_to_push ]] || stopRegistry
 
 stopInstance
 createSnapshot
