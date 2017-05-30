@@ -12,9 +12,11 @@ sudo apt-get update
 
 sudo apt-get -y install docker-ce
 
-[[ -z $registry ]] || sudo cat > /etc/docker/daemon.json << EOF
+[[ -z $registry ]] || sudo tee /etc/docker/daemon.json >/dev/null << EOF
 {
   "insecure-registries": ["$registry"]
 }
 EOF
+
+sudo service docker restart
 
