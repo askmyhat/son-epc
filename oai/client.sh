@@ -17,20 +17,38 @@ function getIp {
   echo $ipv4_adress
 }
 
-hss_mgmt=`getIp hss mgmt`
-hss_data=$hss_mgmt/24
-mme_mgmt=`getIp mme mgmt`
-mme_data=$mme_mgmt/24
-spgw_mgmt=`getIp spgw mgmt`
-spgw_data=$spgw_mgmt/24
-hss_host=hss
-mme_host=mme
-spgw_host=spgw
+if [[ ! -f .client ]]; then
+  hss_mgmt=`getIp hss mgmt`
+  hss_data=$hss_mgmt/24
+  mme_mgmt=`getIp mme mgmt`
+  mme_data=$mme_mgmt/24
+  spgw_mgmt=`getIp spgw mgmt`
+  spgw_data=$spgw_mgmt/24
+  hss_host=hss
+  mme_host=mme
+  spgw_host=spgw
 
-mme_access=`getIp mme private`
-mme_access="$mme_access/24"
-spgw_access=`getIp spgw private`
-spgw_access="$spgw_access/24"
+  mme_access=`getIp mme private`
+  mme_access="$mme_access/24"
+  spgw_access=`getIp spgw private`
+  spgw_access="$spgw_access/24"
+
+cat << EOF > .client
+hss_mgmt=$hss_mgmt
+hss_data=$hss_data
+mme_mgmt=$mme_mgmt
+mme_data=$mme_data
+spgw_mgmt=$spgw_mgmt
+spgw_data=$spgw_data
+hss_host=$hss_host
+mme_host=$mme_host
+spgw_host=$spgw_host
+mme_access=$mme_access
+spgw_access=$spgw_access
+EOF
+fi
+
+. ./.client
 
 echo "HSS: $hss_host: $hss_mgmt ($hss_data)"
 echo "MME: $mme_host: $mme_mgmt ($mme_data - $mme_access)"
