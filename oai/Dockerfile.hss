@@ -18,5 +18,5 @@ RUN service mysql start; /root/openair-cn/SCRIPTS/hss_db_import localhost root h
 
 ENV SON_EMU_CMD "son-vm-server -v -c /root/son-epc/oai/hss.conf"
 
-CMD service mysql start && son-vm-server -v -c /root/son-epc/oai/hss.conf
+CMD service mysql restart && son-vm-server -v -c /root/son-epc/oai/hss.conf
 
