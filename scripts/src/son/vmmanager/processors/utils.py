@@ -16,6 +16,7 @@ RE_IPV4 = r'\.'.join([RE_IPV4_NUMBER] * 4)
 RE_IPV4_MASK = RE_IPV4 + '/\d{1,2}'
 RE_ASSIGNMENT = lambda variable, value: r'(%s\s*=\s*)"%s"' % (variable, value)
 RE_NAME = r'[\w\.-]+'
+RE_PATH = r'[\w\.-/]+'
 
 class ConfiguratorHelpers(object):
 

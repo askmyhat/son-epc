@@ -1,7 +1,7 @@
 from son.vmmanager.jsonserver import IJsonProcessor as P
 from son.vmmanager.processors import utils
 from son.vmmanager.processors.utils import RE_IPV4_MASK, RE_IPV4
-from son.vmmanager.processors.utils import RE_ASSIGNMENT, RE_NAME
+from son.vmmanager.processors.utils import RE_ASSIGNMENT, RE_NAME, RE_PATH
 
 import tempfile
 import logging
@@ -50,7 +50,7 @@ class MME_Configurator(utils.ConfiguratorHelpers):
     RE_SGW_IPV4 = RE_ASSIGNMENT('SGW_IPV4_ADDRESS_FOR_S11', RE_IPV4_MASK)
     RE_HSS_HOSTNAME = RE_ASSIGNMENT('HSS_HOSTNAME', RE_NAME)
     RE_IP_CAPABILITY = RE_ASSIGNMENT('.*IP_CAPABILITY', RE_NAME)
-    RE_PID_DIRECTORY = RE_ASSIGNMENT('.*PID_DIRECTORY', RE_NAME)
+    RE_PID_DIRECTORY = RE_ASSIGNMENT('.*PID_DIRECTORY', RE_PATH)
 
     RE_IDENTITY = RE_ASSIGNMENT('^Identity', RE_NAME)
     RE_CONNECT_PEER = RE_ASSIGNMENT('^ConnectPeer', RE_NAME)

@@ -341,6 +341,42 @@ class MME_Configurator(unittest.TestCase):
         self.assertIn('%s = "%s";' % (PID_DIRECTORY, '/var/run'), mme_config)
         self.assertIn('%s = "%s";' % (IP_CAPABILITY, 'IPv4'), mme_config)
 
+    def testUpdateMMEConfigWPidDirectory(self):
+        PID_DIRECTORY = 'PID_DIRECTORY'
+        IP_CAPABILITY = 'IP_CAPABILITY'
+        self.writeContent('%s = "IPv4";\n' % IP_CAPABILITY, self.mme_config)
+        self.writeContent('%s = "/tmp/run";\n' % PID_DIRECTORY, self.mme_config)
+
+        MME_HOST, MME_IP = 'mme.domain.my', '10.0.0.2/24'
+        HSS_HOST, HSS_IP = 'hss.domain.my', '10.0.0.3/24'
+        SPGW_HOST, SPGW_IP = 'spgw.domain.my', '10.0.0.4/24'
+        S11_INTERFACE = 'eth0'
+        S1_INTERFACE, S1_IP = 'eth2', '20.0.0.1/24'
+
+        ip2interface = {
+            MME_IP: S11_INTERFACE,
+            S1_IP: S1_INTERFACE
+        }
+
+        configurator = mme_p.MME_Configurator(self.mme_config,
+                                              self.mme_fd_config,
+                                              self.host_file)
+
+        configurator.getInterfacesName = \
+            lambda ip: ip2interface[ip] if ip in ip2interface else None
+
+        config = mme_p.MME_Config(mme_host = MME_HOST, mme_ip = MME_IP,
+                                  hss_host = HSS_HOST, hss_ip = HSS_IP,
+                                  spgw_host = SPGW_HOST, spgw_ip = SPGW_IP,
+                                  s1_ip = S1_IP)
+
+        configurator.configure(config)
+
+        mme_config = self.getContent(self.mme_config)
+        self.assertEqual(len(mme_config.splitlines()), 2)
+        self.assertIn('%s = "%s";' % (PID_DIRECTORY, '/var/run'), mme_config)
+        self.assertIn('%s = "%s";' % (IP_CAPABILITY, 'IPv4'), mme_config)
+
     def testUpdateMMEFDConfig(self):
         IDENTITY = 'Identity'
         REALM = 'Realm'
