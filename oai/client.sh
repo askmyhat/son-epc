@@ -12,6 +12,8 @@ function getIp {
   addresses=`openstack server show $server -f value -c addresses`
   address=`split ';' $addresses | awk -F'=' '$1 ~ /'$interface'/{print $2}'`
   ipv4_adress=`split ',' $address | sed -n -r '/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/p'`
+  awk '{if(NF > 2) print "Multiple address found ("$0"). Choosing "$1}' 1>&2 <<< $ipv4_adress
+  ipv4_adress=`awk '{print $1}' <<< $ipv4_adress`
   echo $ipv4_adress
 }
 
