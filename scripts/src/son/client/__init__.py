@@ -74,7 +74,7 @@ class Client(object):
         self.isPp = isPp
         self._init_configs()
 
-    def _init_connection(self, isStopping = False):
+    def _init_connection(self, isStopping = False, isLogging = False):
         if self.isPp:
             sgw_mgmts = self.sgw.mgmt_ip.split(',')
             clients = [(self.hss.mgmt_ip, self.hss_config),
@@ -83,13 +83,14 @@ class Client(object):
                 (self.lb.mgmt_ip, self.lb_config)]
             for mgmt, config in zip(sgw_mgmts, self.sgw_config):
                 clients.append((mgmt, config))
-            self.factory = ClientFactory(clients, isStopping = isStopping)
+            self.factory = ClientFactory(clients, isStopping = isStopping,
+                                         isLogging = isLogging)
         else:
             self.factory = ClientFactory([
                 (self.hss.mgmt_ip, self.hss_config),
                 (self.mme.mgmt_ip, self.mme_config),
                 (self.sgw.mgmt_ip, self.spgw_config)
-            ], isStopping = isStopping)
+            ], isStopping = isStopping, isLogging = isLogging)
 
     def _init_configs(self):
         self._init_hosts()
@@ -219,6 +220,10 @@ class Client(object):
         self._init_connection(isStopping = True)
         reactor.run()
 
+    def logs(self):
+        self._init_connection(isLogging = True)
+        reactor.run()
+
 
 def createOAISpecificArgs(parser):
     parser.add_argument('--hss_host', required=True,
@@ -289,6 +294,8 @@ def createGeneralParser():
                         default=False, help='Verbose')
     parser.add_argument('--stop','-s', action='store_true', dest='stop',
                         default=False, help='Stop vEPC')
+    parser.add_argument('--logs','-l', action='store_true', dest='logs',
+                        default=False, help='Get logs from vEPC')
     return parser
 
 def OAIClient(args):
@@ -344,5 +351,7 @@ def main(argv=sys.argv[1:]):
 
     if parsed_args.stop:
         client.stop()
+    elif parsed_args.logs:
+        client.logs()
     else:
         client.start()

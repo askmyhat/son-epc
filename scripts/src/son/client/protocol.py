@@ -64,6 +64,13 @@ class ClientProtocol(Protocol):
         self.transport.write(jsonString.encode())
         return self
 
+    @onCallback
+    def getLogs(self):
+        self._logPeer('Sending stop command to')
+        jsonString = json.dumps({ 'command': 'status' })
+        self.transport.write(jsonString.encode())
+        return self
+
     def _logPeer(self, message):
         dst = self.transport.getPeer()
         self.logger.info('%s %s:%s', message, dst.host, dst.port)
@@ -71,7 +78,7 @@ class ClientProtocol(Protocol):
 
 class ClientFactory(CF):
 
-    def __init__(self, configs, isStopping = False, port = 38388):
+    def __init__(self, configs, isStopping = False, isLogging = False, port = 38388):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.protocols = {}
         for host,config in configs:
@@ -82,6 +89,11 @@ class ClientFactory(CF):
         if isStopping:
             d = defer.gatherResults(
                 [p.sendStop() for p in self.protocols.values()]
+            )
+            d.addCallback(lambda r: reactor.stop())
+        elif isLogging:
+            d = defer.gatherResults(
+                [p.getLogs() for p in self.protocols.values()]
             )
             d.addCallback(lambda r: reactor.stop())
         else:
