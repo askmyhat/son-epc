@@ -10,7 +10,7 @@ RUN echo 'mysql-server mysql-server/root_password_again password hurka' | debcon
 RUN echo 'wireshark-common wireshark-common/install-setuid boolean true' | debconf-set-selections
 
 WORKDIR /root
-RUN git clone https://gitlab.eurecom.fr/oai/openair-cn
+RUN git clone https://github.com/elekjani/openair-cn.git
 
 WORKDIR /root/openair-cn
 RUN ./SCRIPTS/build_hss -i -F

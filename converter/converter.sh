@@ -94,7 +94,18 @@ echo "Using build package $build_package"
 echo "Using flavor $flavor_name, image $image_name, network $network_name"
 echo "Snapshot will be saved with name $snapshot_name"
 [[ $(openstack image show $snapshot_name 2>/dev/null) ]] && die "Image with name $snapshot_name already exists. Please specify a unique snapshot name"
-[[ -z $images_to_push ]] || echo "Registry will be started and $images_to_push will be pushed"
+if [[ -n $images_to_push ]]; then
+  if [[ -z $docker_registry ]]; then
+    echo "Registry will be started and $images_to_push will be pushed"
+  else
+    echo "$images_to_push will be pulled from remote docker registry $docker_registry"
+  fi
+fi
+
+os_cli_version=`openstack --version 2>&1`
+[[ $? -eq 0 ]] || die "OpenStack CLI is not installed"
+os_cli_version=`cut -f2 -d' ' <<< $os_cli_version`
+os_old_cli_version="3.2.1"
 
 ssh_config=""
 key_name=""
@@ -110,6 +121,8 @@ network_id=`openstack network show $network_name -f value -c id 2>/dev/null`
 [[ -n $flavor_id ]] || die "No flavor ID is found for name $flavor_name"
 [[ -n $image_id ]] || die "No image ID is found for name $image_name"
 [[ -n $network_id ]] || die "No network ID is found for name $network_name"
+
+
 
 function getUniqueName() {
   local prefix=$1
@@ -163,10 +176,17 @@ function createSecGroup() {
 
   echo "Creating security group"
   openstack security group create $secgroup_name
-  echo "Adding ingress IPv4 rule"
-  openstack security group rule create --ethertype IPv4 --ingress --remote-ip 0.0.0.0/0 $secgroup_name
-  echo "Adding ingress IPv6 rule"
-  openstack security group rule create --ethertype IPv6 --ingress --remote-ip ::/0 $secgroup_name
+  if [[ $os_cli_version == $os_old_cli_version ]]; then
+    echo "Adding ingress IPv4 rule"
+    openstack security group rule create --ethertype IPv4 --ingress --src-ip 0.0.0.0/0 $secgroup_name
+    echo "Adding ingress IPv6 rule"
+    openstack security group rule create --ethertype IPv6 --ingress --src-ip ::/0 $secgroup_name
+  else
+    echo "Adding ingress IPv4 rule"
+    openstack security group rule create --ethertype IPv4 --ingress --remote-ip 0.0.0.0/0 $secgroup_name
+    echo "Adding ingress IPv6 rule"
+    openstack security group rule create --ethertype IPv6 --ingress --remote-ip ::/0 $secgroup_name
+  fi
 }
 
 function deleteSecGroup() {
@@ -180,7 +200,11 @@ function createInstance() {
   echo "Choosen name: $instance_name"
 
   echo "Creating instance"
-  openstack server create --flavor $flavor_id --image $image_id --key-name $key_name --security-group $secgroup_name --network $network_id $instance_name
+  if [[ $os_cli_version == $os_old_cli_version ]]; then
+    openstack server create --flavor $flavor_id --image $image_id --key-name $key_name --security-group $secgroup_name --nic net-id=$network_id $instance_name
+  else
+    openstack server create --flavor $flavor_id --image $image_id --key-name $key_name --security-group $secgroup_name --network $network_id $instance_name
+  fi
 }
 
 function deleteInstance() {
