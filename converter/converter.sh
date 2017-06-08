@@ -340,6 +340,14 @@ function stopRegistry() {
   echo "Done"
 }
 
+function pullImages() {
+  registry=$1
+  images=$2
+  c_xargs $images c_ssh converter sudo docker image pull $registry/{}
+  c_xargs $images c_ssh converter sudo docker image tag $registry/{} {}
+  c_xargs `sed 's/[:\/]/_/g' <<< $images` c_ssh sudo systemctl enable docker-container@{}.service
+}
+
 function buildImages() {
   c_ssh converter mkdir build_dir
   c_scp $build_package converter:build.tar.gz
@@ -387,6 +395,8 @@ createSshConfig
 
 [[ -z $images_to_push || -n $docker_registry ]] || startRegistry
 [[ $do_not_install_docker == 1 ]] || installDocker
+[[ -z $images_to_push || -n $docker_registry ]] || pullImages $local_docker_registry_ip:$registry_port $images_to_push
+[[ -z $images_to_push || -z $docker_registry ]] || pullImages $docker_registry $images_to_push
 buildImages
 [[ -z $images_to_push || -n $docker_registry ]] || stopRegistry
 
