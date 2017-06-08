@@ -100,7 +100,7 @@ class SPGW_Configurator(utils.ConfiguratorHelpers):
 class SPGW_Processor(P):
 
     SPGW_CONFIG_PATH = '/usr/local/etc/oai/spgw.conf'
-    SPGW_EXECUTABLE = '~/openair-cn/scripts/run_spgw'
+    SPGW_EXECUTABLE = '~/openair-cn/SCRIPTS/run_spgw'
 
     def __init__(self, spgw_config_path = SPGW_CONFIG_PATH):
         self.logger = logging.getLogger(SPGW_Processor.__name__)

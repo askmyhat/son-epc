@@ -9,12 +9,12 @@ RUN python3 setup.py install
 COPY hss.conf /root/son-epc/scripts/server.conf
 COPY hss.sh /root/son-epc/scripts/start.sh
 
-RUN cp /root/openair-cn/etc/hss.conf /usr/local/etc/oai
-RUN cp /root/openair-cn/etc/hss_fd.conf /usr/local/etc/oai/freeDiameter
-RUN cp /root/openair-cn/etc/acl.conf /usr/local/etc/oai/freeDiameter
+RUN cp /root/openair-cn/ETC/hss.conf /usr/local/etc/oai
+RUN cp /root/openair-cn/ETC/hss_fd.conf /usr/local/etc/oai/freeDiameter
+RUN cp /root/openair-cn/ETC/acl.conf /usr/local/etc/oai/freeDiameter
 
-RUN service mysql start; /root/openair-cn/scripts/hss_db_create localhost root hurka root hurka oai_db
-RUN service mysql start; /root/openair-cn/scripts/hss_db_import localhost root hurka oai_db /root/openair-cn/SRC/OAI_HSS/db/oai_db.sql
+RUN service mysql start; /root/openair-cn/SCRIPTS/hss_db_create localhost root hurka root hurka oai_db
+RUN service mysql start; /root/openair-cn/SCRIPTS/hss_db_import localhost root hurka oai_db /root/openair-cn/SRC/OAI_HSS/db/oai_db.sql
 
 ENV SON_EMU_CMD "son-vm-server -v -c /root/son-epc/oai/hss.conf"
 

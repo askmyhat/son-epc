@@ -13,14 +13,14 @@ WORKDIR /root
 RUN git clone https://github.com/elekjani/openair-cn.git
 
 WORKDIR /root/openair-cn
-RUN git checkout develop
-RUN ./scripts/build_hss -i -F
-RUN ./scripts/build_mme -i -f
-RUN ./scripts/build_spgw -i -f
+RUN git checkout develop.old.05.10.2017
+RUN ./SCRIPTS/build_hss -i -F
+RUN ./SCRIPTS/build_mme -i -f
+RUN ./SCRIPTS/build_spgw -i -f
 
-RUN ./scripts/build_hss
-RUN ./scripts/build_mme
-RUN ./scripts/build_spgw
+RUN ./SCRIPTS/build_hss
+RUN ./SCRIPTS/build_mme
+RUN ./SCRIPTS/build_spgw
 
 WORKDIR /root
 RUN wget https://bootstrap.pypa.io/get-pip.py

@@ -7,9 +7,9 @@ RUN python3 setup.py install
 COPY mme.conf /root/son-epc/scripts/server.conf
 COPY mme.sh /root/son-epc/scripts/start.sh
 
-RUN cp /root/openair-cn/etc/mme.conf /usr/local/etc/oai
-RUN cp /root/openair-cn/etc/mme_fd.conf /usr/local/etc/oai/freeDiameter
-RUN cp /root/openair-cn/etc/acl.conf /usr/local/etc/oai/freeDiameter
+RUN cp /root/openair-cn/ETC/mme.conf /usr/local/etc/oai
+RUN cp /root/openair-cn/ETC/mme_fd.conf /usr/local/etc/oai/freeDiameter
+RUN cp /root/openair-cn/ETC/acl.conf /usr/local/etc/oai/freeDiameter
 
 ENV SON_EMU_CMD "son-vm-server -v -c /root/son-epc/oai/mme.conf"
 
