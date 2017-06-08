@@ -248,9 +248,9 @@ class HSS_Processor(P):
     HSS_FREEDIAMETER_CONFIG_PATH = '/usr/local/etc/oai/freeDiameter/hss_fd.conf'
     HSS_CONFIG_PATH = '/usr/local/etc/oai/hss.conf'
     HOST_FILE_PATH = '/etc/hosts'
-    HSS_CERTIFICATE_EXECUTABLE = '~/openair-cn/SCRIPTS/check_hss_s6a_certificate'
+    HSS_CERTIFICATE_EXECUTABLE = '~/openair-cn/scripts/check_hss_s6a_certificate'
     HSS_CERTIFICATE_PATH = '/usr/local/etc/oai/freeDiameter'
-    HSS_EXECUTABLE = '~/openair-cn/SCRIPTS/run_hss'
+    HSS_EXECUTABLE = '~/openair-cn/scripts/run_hss'
 
     def __init__(self, hss_config_path = HSS_CONFIG_PATH,
                  hss_freediameter_config_path = HSS_FREEDIAMETER_CONFIG_PATH,

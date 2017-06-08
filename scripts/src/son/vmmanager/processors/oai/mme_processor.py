@@ -190,9 +190,9 @@ class MME_Processor(P):
     MME_FREEDIAMETER_CONFIG_PATH = '/usr/local/etc/oai/freeDiameter/mme_fd.conf'
     MME_CONFIG_PATH = '/usr/local/etc/oai/mme.conf'
     HOST_FILE_PATH = '/etc/hosts'
-    MME_CERTIFICATE_CREATOR= '~/openair-cn/SCRIPTS/check_mme_s6a_certificate'
+    MME_CERTIFICATE_CREATOR= '~/openair-cn/scripts/check_mme_s6a_certificate'
     MME_CERTIFICATE_PATH = '/usr/local/etc/oai/freeDiameter/'
-    MME_EXECUTABLE = '~/openair-cn/SCRIPTS/run_mme'
+    MME_EXECUTABLE = '~/openair-cn/scripts/run_mme'
 
     def __init__(self, mme_config_path = MME_CONFIG_PATH,
                  mme_freediameter_config_path = MME_FREEDIAMETER_CONFIG_PATH,

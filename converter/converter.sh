@@ -43,7 +43,7 @@ function die() {
 image_name="Ubuntu"
 flavor_name="ds1G"
 network_name="private"
-build_package="build.tar.gz"
+build_package="null"
 snapshot_name="Snapshot"
 do_not_install_docker=0
 images_to_push=""
@@ -79,7 +79,7 @@ while getopts ":i:f:n:b:s:dhr:e:" args; do
       echo -e "\t-i name\t\tOpenStack base image (default: Ubuntu)"
       echo -e "\t-f name\t\tOpenStack flavor name (default: ds1G)"
       echo -e "\t-n name\t\tOpenStack network name (default: private)"
-      echo -e "\t-b package\tBuild package (default: build.tar.gz)"
+      echo -e "\t-b package\tBuild package (default: no build package will be used)"
       echo -e "\t-s name\t\tSnapshot name (default: Snapshot)"
       echo -e "\t-d\t\tDisable docker installation"
       echo -e "\t-r images\tStart local docker registry and push images (comma separted list) to it"
@@ -88,7 +88,7 @@ while getopts ":i:f:n:b:s:dhr:e:" args; do
       ;;
   esac
 done
-[[ -f $build_package ]] || die "Build script \"$build_package\" does not exist"
+[[ -f $build_package || $build_package == "null"]] || die "Build script \"$build_package\" does not exist"
 
 echo "Using build package $build_package"
 echo "Using flavor $flavor_name, image $image_name, network $network_name"
@@ -397,7 +397,7 @@ createSshConfig
 [[ $do_not_install_docker == 1 ]] || installDocker
 [[ -z $images_to_push || -n $docker_registry ]] || pullImages $local_docker_registry_ip:$registry_port $images_to_push
 [[ -z $images_to_push || -z $docker_registry ]] || pullImages $docker_registry $images_to_push
-buildImages
+[[ $build_package == "null" ]] || buildImages
 [[ -z $images_to_push || -n $docker_registry ]] || stopRegistry
 
 stopInstance
