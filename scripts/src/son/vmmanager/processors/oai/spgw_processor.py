@@ -88,7 +88,7 @@ class SPGW_Configurator(utils.ConfiguratorHelpers):
                 if s1u_ip is not None:
                     self.sed_it(self.RE_S1U_IP, s1u_ip)
 
-                self.sed_it(self.RE_PGW_MASQ, 'yes')
+                #self.sed_it(self.RE_PGW_MASQ, 'yes')
 
                 new_content += self._current_line
 
