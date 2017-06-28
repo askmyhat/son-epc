@@ -88,9 +88,9 @@ while getopts ":i:f:n:b:s:dhr:e:" args; do
       ;;
   esac
 done
-[[ -f $build_package || $build_package == "null"]] || die "Build script \"$build_package\" does not exist"
 
-echo "Using build package $build_package"
+[[ -f $build_package || $build_package == "null" ]] || die "Build script \"$build_package\" does not exist"
+[[ $build_package == "null" ]] || echo "Using build package $build_package"
 echo "Using flavor $flavor_name, image $image_name, network $network_name"
 echo "Snapshot will be saved with name $snapshot_name"
 [[ $(openstack image show $snapshot_name 2>/dev/null) ]] && die "Image with name $snapshot_name already exists. Please specify a unique snapshot name"
@@ -115,13 +115,13 @@ instance_name=""
 floating_ip=""
 local_docker_registry_ip="172.24.4.1"
 registry_port=""
+
 image_id=`openstack image show $image_name -f value -c id 2>/dev/null`
 flavor_id=`openstack flavor show $flavor_name -f value -c id 2>/dev/null`
 network_id=`openstack network show $network_name -f value -c id 2>/dev/null`
 [[ -n $flavor_id ]] || die "No flavor ID is found for name $flavor_name"
 [[ -n $image_id ]] || die "No image ID is found for name $image_name"
 [[ -n $network_id ]] || die "No network ID is found for name $network_name"
-
 
 
 function getUniqueName() {
@@ -153,20 +153,6 @@ function deleteKey() {
   echo "Deleting key $key_name and private key $private_key"
   openstack keypair delete $key_name
   rm $private_key
-}
-
-function getUniqueName() {
-  local prefix=$1
-  shift
-  local cmd=$@
-
-  local name_exists=0
-  while [[ $name_exists == 0 ]]; do
-    local random_name="${prefix}_$RANDOM"
-    $cmd | grep -q $random_name
-    name_exists=$?
-  done
-  echo $random_name
 }
 
 function createSecGroup() {
@@ -235,13 +221,9 @@ function waitUntilActive() {
 
 function waitUntilSshAlive() {
   echo -n "Waiting until instance's ssh comes up"
-  nc -z $floating_ip 22
-  local isSshPortOpen=$?
-  while [[ $isSshPortOpen != 0 ]]; do
+  while ! nc -z $floating_ip 22; do
     echo -n "."
     sleep 1
-    nc -z $floating_ip 22
-    isSshPortOpen=$?
   done
   echo "OK"
 }
@@ -265,11 +247,11 @@ function addFloatingIP() {
 function createSshConfig() {
   ssh_config=`tempfile`
   cat << EOF > $ssh_config
-  Host converter
-    Hostname $floating_ip
-    User ubuntu
-    IdentityFile $private_key
-    StrictHostKeyChecking no
+Host converter
+  Hostname $floating_ip
+  User ubuntu
+  IdentityFile $private_key
+  StrictHostKeyChecking no
 EOF
 }
 
@@ -278,11 +260,11 @@ function deleteSshConfig() {
 }
 
 function c_ssh() {
-  ssh -q -F $ssh_config $@
+  ssh -q -F $ssh_config converter $@
 }
 
 function c_scp() {
-  scp -q -F $ssh_config $@
+  scp -q -F $ssh_config $1 converter:$2
 }
 
 function c_xargs() {
@@ -293,16 +275,16 @@ function c_xargs() {
 }
 
 function installDocker() {
-  c_scp install_docker.sh converter:install_docker.sh
+  c_scp install_docker.sh install_docker.sh
   if [[ -n $images_to_push && -z $docker_registry ]]; then
-    c_ssh converter ./install_docker.sh $local_docker_registry_ip:$registry_port
+    c_ssh ./install_docker.sh $local_docker_registry_ip:$registry_port
   elif [[ -n $images_to_push && -n $docker_registry ]]; then
-    c_ssh converter ./install_docker.sh $docker_registry
+    c_ssh ./install_docker.sh $docker_registry
   else
-    c_ssh converter ./install_docker.sh
+    c_ssh ./install_docker.sh
   fi
-  c_scp docker-container@.service converter:/tmp/docker-container@.service
-  c_ssh converter sudo mv /tmp/docker-container@.service /etc/systemd/system/docker-container@.service
+  c_scp docker-container@.service /tmp/docker-container@.service
+  c_ssh sudo mv /tmp/docker-container@.service /etc/systemd/system/docker-container@.service
 }
 
 function startRegistry() {
@@ -341,21 +323,26 @@ function stopRegistry() {
 }
 
 function pullImages() {
-  registry=$1
-  images=$2
-  c_xargs $images c_ssh converter sudo docker image pull $registry/{}
-  c_xargs $images c_ssh converter sudo docker image tag $registry/{} {}
-  c_xargs `sed 's/[:\/]/_/g' <<< $images` c_ssh sudo systemctl enable docker-container@{}.service
+  local registry=$1
+  local images=$2
+  echo "Pulling images ($images) in OS instance from $registry"
+  for i in `c_xargs $images echo {}`; do
+    echo "Pulling image: $i"
+    c_ssh sudo docker image pull $registry/$i
+    local no_colon_name=${i%:*}
+    c_ssh sudo docker image tag $registry/$i $no_colon_name
+    c_ssh sudo systemctl enable docker-container@$no_colon_name.service
+  done
 }
 
 function buildImages() {
-  c_ssh converter mkdir build_dir
-  c_scp $build_package converter:build.tar.gz
-  c_ssh converter tar -C build_dir -xzf build.tar.gz
+  c_ssh mkdir build_dir
+  c_scp $build_package build.tar.gz
+  c_ssh tar -C build_dir -xzf build.tar.gz
   if [[ -z $docker_registry ]]; then
-    c_ssh converter bash ./build_dir/build.sh $local_docker_registry_ip:$registry_port $images_to_push
+    c_ssh bash ./build_dir/build.sh $local_docker_registry_ip:$registry_port $images_to_push
   else
-    c_ssh converter bash ./build_dir/build.sh $docker_registry $images_to_push
+    c_ssh bash ./build_dir/build.sh $docker_registry $images_to_push
   fi
 }
 
