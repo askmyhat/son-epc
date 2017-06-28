@@ -7,13 +7,10 @@
 #     a) image named $image_name
 #     b) flavor names $flavor_name
 #     c) network named $network_name
-# 4) Add a floating if exists any not used one or create a new one
-#    on the network named public
+# 4) Add a floating IP if exists any not used one or create a new one
+#    on the network named "public"
 # 5) Create temporary SSH config that defines host "converter"
 # 6) Install docker on "converter" through SSH and add docker service
-#    Note: one must execute in "build.sh" (see step 8) the following:
-#    "systemctl enable docker-container@image_name.service" where
-#    image_name is the name of the image created by "build.sh"
 # 7) Copy and targz out $build_package on "converter"
 # 8) Run script "build.sh" from $build_package
 # 9) Stop the VM and create a snapshot of it
@@ -40,14 +37,14 @@ function die() {
 }
 
 #These variables should be provided by the user
-image_name="Ubuntu"
-flavor_name="ds1G"
-network_name="private"
-build_package="null"
-snapshot_name="Snapshot"
-do_not_install_docker=0
-images_to_push=""
-docker_registry=""
+image_name="Ubuntu"      #-i flag
+flavor_name="ds1G"       #-f flag
+network_name="private"   #-n flag
+build_package="null"     #-b flag
+snapshot_name="Snapshot" #-s flag
+do_not_install_docker=0  #-d flag
+images_to_push=""        #-r flag
+docker_registry=""       #-e flag
 while getopts ":i:f:n:b:s:dhr:e:" args; do
   case $args in
     i)
